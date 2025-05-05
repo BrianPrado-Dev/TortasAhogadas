@@ -1,0 +1,16 @@
+
+        TICKET DE PEDIDO        
+================================
+Domicilio: geranio 869
+Teléfono: 334333
+Cruces: clavel y nardo 
+Fecha: 2025-05-04 23:07
+================================
+Torta ($55)
+Nota: buche
+Paquete 1 ($85)
+Nota: torta buche y taco frijol (con agua fresca)
+================================
+          TOTAL: $140           
+     Gracias por su pedido      
+================================
