@@ -1,10 +1,10 @@
 
         TICKET DE PEDIDO        
 ================================
-Domicilio: Pedro Moreno
-Teléfono: 33323223
-Cruces: amsmasmss
-Fecha: 2025-05-06 00:57
+Domicilio: agua marina
+Teléfono: 22332
+Cruces: 32232323
+Fecha: 2025-05-06 00:56
 ================================
 --------------------------------
 
@@ -12,16 +12,14 @@ Cliente= GENERAL
 Envío ($15)
 --------------------------------
 
-Cliente= PEDRO
+Cliente= MARIO
 Torta ($55)
-Refresco ($25)
---------------------------------
-
-Cliente= MARIA
-Refresco ($25)
+Taco Blandito ($25)
 Paquete 1 ($85)
 Nota:  (agua fresca)
+Agua Chica ($15)
+Taco Blandito ($25)
 ================================
-          TOTAL: $205           
+          TOTAL: $220           
      Gracias por su pedido      
 ================================

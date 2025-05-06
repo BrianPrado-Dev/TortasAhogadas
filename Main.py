@@ -3,7 +3,6 @@ from tkinter import simpledialog, messagebox
 import os
 from datetime import datetime, date
 
-# Menú con precios
 menu_productos = {
     "Torta": 55,
     "Taco Dorado": 10,
@@ -19,7 +18,6 @@ pedido_actual = []
 grupos = []
 grupo_actual = None
 
-# Centrar texto
 def centrar(texto, ancho=32):
     return texto.center(ancho)
 
@@ -171,9 +169,21 @@ def imprimir_ticket():
     os.startfile("ticket.txt", "print")
     messagebox.showinfo("Éxito", "Ticket enviado a imprimir.")
 
+def imprimir_ticket_directo(ticket_texto):
+    with open("ticket_temp.txt", "w", encoding="utf-8") as f:
+        f.write(ticket_texto)
+    os.startfile("ticket_temp.txt", "print")
+
 def imprimir_resumen_dia():
-    clave = simpledialog.askstring("Contraseña", "Ingresa la contraseña para ver el resumen del día:")
-    if clave != "123":
+    clave_archivo = "clave.txt"
+    if not os.path.exists(clave_archivo):
+        with open(clave_archivo, "w") as f:
+            f.write("123")
+    with open(clave_archivo, "r") as f:
+        clave_guardada = f.read().strip()
+
+    clave = simpledialog.askstring("Contraseña", "Ingresa la contraseña para ver el resumen del día:", show="*")
+    if clave != clave_guardada:
         messagebox.showerror("Acceso denegado", "Contraseña incorrecta.")
         return
 
@@ -225,15 +235,35 @@ def mostrar_lista_pedidos():
     ventana_lista.title("Lista de pedidos del día")
     ventana_lista.geometry("600x700")
 
-    text_widget = tk.Text(ventana_lista, wrap="word")
+    canvas = tk.Canvas(ventana_lista)
+    scrollbar = tk.Scrollbar(ventana_lista, orient="vertical", command=canvas.yview)
+    frame_pedidos = tk.Frame(canvas)
+
+    frame_pedidos.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+    canvas.create_window((0, 0), window=frame_pedidos, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+
     for linea in lineas:
         partes = linea.strip().split(" | ")
         if len(partes) >= 6:
-            fecha, domicilio, total, telefono, cruces, items = partes
-            text_widget.insert("end", f"Fecha: {fecha}\nDomicilio: {domicilio}\nTeléfono: {telefono}\nCruces: {cruces}\nTotal: ${total}\nItems: {items}\n{'-'*40}\n")
+            fecha, domicilio, total, telefono, cruces, items_str = partes
+            try:
+                items = eval(items_str)
+            except:
+                items = []
 
-    text_widget.pack(fill="both", expand=True)
-    text_widget.config(state="disabled")
+            ticket = imprimir_ticket_personalizado(fecha, domicilio, telefono, cruces, total, items)
+
+            marco = tk.Frame(frame_pedidos, bd=2, relief="groove", padx=5, pady=5)
+            marco.pack(fill="x", padx=10, pady=5)
+
+            tk.Label(marco, text=ticket, justify="left", font=("Courier New", 9), anchor="w").pack(side="left", fill="x", expand=True)
+
+            boton_imprimir = tk.Button(marco, text="🖨️", bg="green", fg="white", width=3, height=1, command=lambda t=ticket: imprimir_ticket_directo(t))
+            boton_imprimir.pack(side="right", padx=5, pady=5)
 
 def limpiar_pedido():
     pedido_actual.clear()
@@ -244,7 +274,27 @@ def limpiar_pedido():
     entry_cruces.delete(0, tk.END)
     actualizar_ticket()
 
-# Interfaz
+def cambiar_contrasena():
+    archivo_clave = "clave.txt"
+
+    if not os.path.exists(archivo_clave):
+        with open(archivo_clave, "w") as f:
+            f.write("123")
+
+    with open(archivo_clave, "r") as f:
+        clave_actual = f.read().strip()
+
+    entrada_actual = simpledialog.askstring("Cambiar contraseña", "Ingresa la contraseña actual:", show="*")
+    if entrada_actual != clave_actual:
+        messagebox.showerror("Error", "Contraseña actual incorrecta.")
+        return
+
+    nueva_clave = simpledialog.askstring("Nueva contraseña", "Ingresa la nueva contraseña:", show="*")
+    if nueva_clave:
+        with open(archivo_clave, "w") as f:
+            f.write(nueva_clave)
+        messagebox.showinfo("Éxito", "Contraseña actualizada correctamente.")
+
 ventana = tk.Tk()
 ventana.title("Tortas Ahogadas Doña Susy")
 ventana.geometry("1280x720")
@@ -252,18 +302,15 @@ ventana.geometry("1280x720")
 frame_principal = tk.Frame(ventana)
 frame_principal.pack(fill="both", expand=True, padx=10, pady=10)
 
-# Panel izquierdo
 panel_izquierdo = tk.Frame(frame_principal)
 panel_izquierdo.pack(side="left", fill="y", padx=10)
 
 frame_superior_izq = tk.Frame(panel_izquierdo)
 frame_superior_izq.pack(fill="x")
 
-# Botón de resumen arriba a la derecha
 boton_resumen = tk.Button(frame_principal, text="Resumen del Día", command=imprimir_resumen_dia, bg="blue", fg="white")
 boton_resumen.pack(side="top", anchor="ne", pady=5, padx=10)
 
-# Botón de lista de pedidos
 boton_lista = tk.Button(frame_principal, text="Lista de Pedidos", command=mostrar_lista_pedidos, bg="purple", fg="white")
 boton_lista.pack(side="top", anchor="ne", padx=10)
 
@@ -281,17 +328,22 @@ frame_botones.pack()
 for nombre in menu_productos:
     tk.Button(frame_botones, text=nombre, width=20, command=lambda n=nombre: agregar_producto(n)).pack(pady=2)
 
-tk.Button(frame_superior_izq, text="Nuevo Grupo", command=crear_grupo, bg="orange", fg="white").pack(pady=5)
+tk.Button(frame_superior_izq, text="Agregar Cliente", command=crear_grupo, bg="orange", fg="white").pack(pady=5)
 tk.Button(frame_superior_izq, text="Imprimir ticket", command=imprimir_ticket, bg="green", fg="white").pack(pady=5)
 tk.Button(frame_superior_izq, text="Limpiar pedido", command=limpiar_pedido, bg="red", fg="white").pack(pady=2)
 
-# Panel derecho para resumen del pedido
 panel_derecho = tk.Frame(frame_principal)
 panel_derecho.pack(side="right", fill="both", expand=True)
 
 tk.Label(panel_derecho, text="Resumen del pedido:", font=("Arial", 14, "bold")).pack(anchor="nw")
 frame_resumen = tk.Frame(panel_derecho)
 frame_resumen.pack(fill="both", expand=True, anchor="n")
+
+etiqueta_credito = tk.Label(ventana, text="Created by BrianP", font=("Arial", 8), anchor="w")
+etiqueta_credito.place(x=10, rely=0.98, anchor="sw")
+
+boton_cambiar_clave = tk.Button(ventana, text="Cambiar contraseña", command=cambiar_contrasena, bg="gray", fg="white")
+boton_cambiar_clave.place(relx=0.99, rely=0.98, anchor="se")
 
 actualizar_ticket()
 ventana.mainloop()
