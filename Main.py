@@ -243,7 +243,7 @@ def imprimir_resumen_dia():
         return
 
     resumen += "="*32 + "\n"
-    resumen += f"TOTAL GENERAL: ${total_general}\n"
+    resumen += f"TOTAL GENERAaL: ${total_general}\n"
     resumen += "="*32 + "\n"
 
     with open("resumen_dia.txt", "w", encoding="utf-8") as f:
