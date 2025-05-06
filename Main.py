@@ -173,6 +173,33 @@ def imprimir_ticket_directo(ticket_texto):
     with open("ticket_temp.txt", "w", encoding="utf-8") as f:
         f.write(ticket_texto)
     os.startfile("ticket_temp.txt", "print")
+def imprimir_ticket_personalizado_2(fecha, domicilio, total, items):
+    ticket = f"""
+{centrar("TICKET DE PEDIDO")}
+{"=" * 32}
+Domicilio: {limitar(domicilio)}
+Fecha: {fecha}
+{"=" * 32}
+"""
+
+    items_agrupados = {}
+    for item in items:
+        grupo = item.get("grupo") or "General"
+        items_agrupados.setdefault(grupo, []).append(item)
+
+    for grupo, items in items_agrupados.items():
+        ticket += "-" * 32 + "\n"
+        ticket += f"\nCliente= {grupo.upper()}\n"
+        for item in items:
+            ticket += f"{item['nombre']} (${item['precio']})\n"
+            if item['anotacion']:
+                ticket += f"Nota: {item['anotacion']}\n"
+
+    ticket += f"{"=" * 32}\n"
+    ticket += f"{centrar(f'TOTAL: ${total}')}\n"
+    ticket += f"{"=" * 32}\n"
+
+    return ticket
 
 def imprimir_resumen_dia():
     clave_archivo = "clave.txt"
@@ -182,38 +209,42 @@ def imprimir_resumen_dia():
     with open(clave_archivo, "r") as f:
         clave_guardada = f.read().strip()
 
-    clave = simpledialog.askstring("Contraseña", "Ingresa la contraseña para ver el resumen del día:", show="*")
+    clave = simpledialog.askstring("Contraseña", "Contraseña:", show="*")
     if clave != clave_guardada:
-        messagebox.showerror("Acceso denegado", "Contraseña incorrecta.")
+        messagebox.showerror("Acceso denegado", "Incorrecta.")
         return
 
     hoy = date.today().isoformat()
     archivo = f"historial_{hoy}.txt"
 
     if not os.path.exists(archivo):
-        messagebox.showinfo("Sin historial", "Aún no hay pedidos registrados.")
+        messagebox.showinfo("Sin historial", "Sin pedidos.")
         return
 
-    with open(archivo, "r", encoding="utf-8") as f:
-        lineas = f.readlines()
+    resumen = "===== RESUMEN DIA ====\n"
+    resumen += "Domicilio   |   Fecha   |  Total\n"
+    resumen += "----------- |---------- | ------ \n"
 
-    resumen = ""
     total_general = 0
+    with open(archivo, "r", encoding="utf-8") as f:
+        for linea in f:
+            partes = linea.strip().split(" | ")
+            if len(partes) >= 6:
+                try:
+                    fecha, domicilio, total_str, _, _, _ = partes
+                    total = int(total_str)
+                    total_general += total
+                    resumen += f"{domicilio[:12]} | {fecha[:10]} | ${total}\n"
+                except (ValueError, SyntaxError):
+                    continue
 
-    for linea in lineas:
-        partes = linea.strip().split(" | ")
-        if len(partes) >= 6:
-            fecha, domicilio, total, telefono, cruces, items_str = partes
-            try:
-                items = eval(items_str)
-            except:
-                items = []
-            total_general += int(total)
-            resumen += imprimir_ticket_personalizado(fecha, domicilio, telefono, cruces, total, items)
+    if not resumen or "Domicilio" not in resumen:
+        messagebox.showinfo("Sin datos", "Sin datos.")
+        return
 
-    resumen += "=" * 32 + "\n"
-    resumen += centrar(f"TOTAL GENERAL: ${total_general}") + "\n"
-    resumen += "=" * 32 + "\n"
+    resumen += "="*32 + "\n"
+    resumen += f"TOTAL GENERAL: ${total_general}\n"
+    resumen += "="*32 + "\n"
 
     with open("resumen_dia.txt", "w", encoding="utf-8") as f:
         f.write(resumen)

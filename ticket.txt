@@ -1,10 +1,10 @@
 
         TICKET DE PEDIDO        
 ================================
-Domicilio: Pedro Moreno
-Teléfono: 33323223
-Cruces: amsmasmss
-Fecha: 2025-05-06 00:57
+Domicilio: Continental  9'15am 
+Teléfono: 21232323
+Cruces: Clavel y Nardo
+Fecha: 2025-05-06 14:15
 ================================
 --------------------------------
 
@@ -12,16 +12,23 @@ Cliente= GENERAL
 Envío ($15)
 --------------------------------
 
-Cliente= PEDRO
+Cliente= MARIA
 Torta ($55)
 Refresco ($25)
 --------------------------------
 
-Cliente= MARIA
-Refresco ($25)
+Cliente= KARLA
 Paquete 1 ($85)
+Nota: buche (agua fresca)
+Paquete 2 ($90)
 Nota:  (agua fresca)
+--------------------------------
+
+Cliente= PEDRO
+Agua Grande ($25)
+Taco Blandito ($25)
+Taco Blandito ($25)
 ================================
-          TOTAL: $205           
+          TOTAL: $345           
      Gracias por su pedido      
 ================================
