@@ -1,25 +1,36 @@
 
         TICKET DE PEDIDO        
 ================================
-Domicilio: agua marina
-Teléfono: 22332
-Cruces: 32232323
-Fecha: 2025-05-06 00:56
+Domicilio: Pedro Moreno
+Teléfono: 333333
+Cruces: clavel y nardo
+Fecha: 2025-05-07 00:39
 ================================
 --------------------------------
 
 Cliente= GENERAL
 Envío ($15)
+Cerveza ($25)
+Caguama ($70)
+Agua Grande ($25)
+Nota: Jamaica
+Agua Chica ($15)
+Nota: Horchata
 --------------------------------
 
-Cliente= MARIO
+Cliente= PEDRO
+Agua Grande ($25)
+Nota: Jamaica
 Torta ($55)
 Taco Blandito ($25)
-Paquete 1 ($85)
-Nota:  (agua fresca)
+--------------------------------
+
+Cliente= MARIA
+Torta ($55)
+Nota: Buche
 Agua Chica ($15)
-Taco Blandito ($25)
+Nota: Horchata
 ================================
-          TOTAL: $220           
+          TOTAL: $325           
      Gracias por su pedido      
 ================================
