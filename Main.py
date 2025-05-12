@@ -5,7 +5,11 @@ from datetime import datetime, date
 import win32print
 import win32ui
 from win32con import *
-
+import copy
+# corregir lista de pedidos por que no se guardan los pedidos ahi
+# corregir los grupos ya que no se reinician adecuadamente al crear un nuevo pedido
+# que no sea obligatorio crear un grupo para añadir items
+# cuando se añada un item sin grupo, que se le asigne el grupo "General"
 # Diccionario de productos
 menu_productos = {
     "Torta": 55,
@@ -15,7 +19,7 @@ menu_productos = {
     "Agua Chica": 15,
     "Agua Grande": 25,
     "Paquete 1": 80,
-    "Paquete 2": 85,
+    "Paquete 2": 90,
     "Caguama": 70,
     "Cerveza": 25
 }
@@ -23,8 +27,8 @@ menu_productos = {
 pedido_actual = []
 grupos = []
 grupo_actual = None
-ventana_sabores = None  # Ventana emergente para sabores
-hora_especifica = None  # Variable global para almacenar la hora específica
+ventana_sabores = None
+hora_especifica = None
 
 def centrar(texto, ancho=32):
     return texto.center(ancho)
@@ -33,47 +37,37 @@ def limitar(texto, ancho=32):
     return texto[:ancho]
 
 def dividir_texto(texto, ancho_max=32, prefijo="Nota: "):
-    # Si el texto es None o vacío, no devolver nada
     if not texto:
         return ""
-    
-    # La primera línea incluye el prefijo "Nota: " (6 caracteres), así que el texto inicial tiene 26 caracteres disponibles
     ancho_primera_linea = ancho_max - len(prefijo)
     lineas = []
     palabras = texto.split()
     linea_actual = []
     longitud_actual = 0
 
-    # Procesar todas las palabras
     for i, palabra in enumerate(palabras):
-        # Determinar el ancho máximo dependiendo de si es la primera línea o no
-        if not lineas:  # Primera línea
+        if not lineas:
             ancho = ancho_primera_linea
         else:
             ancho = ancho_max
-
-        # Calcular el espacio necesario para la palabra (incluye un espacio si no es la primera palabra en la línea)
         espacio = 1 if linea_actual else 0
         if longitud_actual + len(palabra) + espacio <= ancho:
             linea_actual.append(palabra)
             longitud_actual += len(palabra) + espacio
         else:
-            # Si hay palabras acumuladas, añadir la línea actual
             if linea_actual:
-                if not lineas:  # Primera línea con prefijo
+                if not lineas:
                     lineas.append(f"{prefijo}{' '.join(linea_actual)}")
-                else:  # Líneas siguientes con indentación
+                else:
                     indentacion = " " * len(prefijo)
                     lineas.append(f"{indentacion}{' '.join(linea_actual)}")
-            # Comenzar una nueva línea con la palabra actual
             linea_actual = [palabra]
             longitud_actual = len(palabra)
 
-    # Añadir la última línea si hay palabras restantes
     if linea_actual:
-        if not lineas:  # Primera línea con prefijo
+        if not lineas:
             lineas.append(f"{prefijo}{' '.join(linea_actual)}")
-        else:  # Líneas siguientes con indentación
+        else:
             indentacion = " " * len(prefijo)
             lineas.append(f"{indentacion}{' '.join(linea_actual)}")
 
@@ -81,25 +75,20 @@ def dividir_texto(texto, ancho_max=32, prefijo="Nota: "):
 
 def mostrar_ventana_sabores(nombre, callback=None):
     global ventana_sabores
-    # Cerrar ventana de sabores si ya existe
     if ventana_sabores:
         ventana_sabores.destroy()
 
-    # Crear ventana emergente
     ventana_sabores = tk.Toplevel(ventana)
     ventana_sabores.title("Seleccionar Sabor")
     ventana_sabores.geometry("250x120")
     ventana_sabores.configure(bg="#f0f0f0")
     ventana_sabores.resizable(False, False)
 
-    # Etiqueta
     tk.Label(ventana_sabores, text=f"Selecciona el sabor para {nombre}", font=("Arial", 10), bg="#f0f0f0").pack(pady=10)
 
-    # Frame para botones
     frame_btn_sabores = tk.Frame(ventana_sabores, bg="#f0f0f0")
     frame_btn_sabores.pack(pady=5)
 
-    # Botones de Jamaica y Horchata
     btn_jamaica = tk.Button(frame_btn_sabores, text="Jamaica", width=10, height=1, font=("Arial", 10), bg="#81c784", fg="white", relief="flat",
                             command=lambda: [callback("Jamaica") if callback else agregar_producto(nombre, "Jamaica"), ventana_sabores.destroy()])
     btn_jamaica.pack(side="left", padx=5)
@@ -108,23 +97,27 @@ def mostrar_ventana_sabores(nombre, callback=None):
                              command=lambda: [callback("Horchata") if callback else agregar_producto(nombre, "Horchata"), ventana_sabores.destroy()])
     btn_horchata.pack(side="left", padx=5)
 
-    # Asegurar que la ventana se cierre al cerrar manualmente
     ventana_sabores.protocol("WM_DELETE_WINDOW", lambda: ventana_sabores.destroy())
 
 def agregar_producto(nombre, sabor_agua=None):
     global grupo_actual
+    if grupo_actual is None:
+        messagebox.showwarning("Sin grupo", "Por favor crea un grupo antes de añadir productos.")
+        crear_grupo()
+        if grupo_actual is None:
+            return
+
     if not any(item["nombre"] == "Envío" for item in pedido_actual):
         pedido_actual.append({
             "nombre": "Envío",
             "anotacion": None,
             "precio": 15,
-            "grupo": None
+            "grupo": "General"
         })
 
     precio_base = menu_productos[nombre]
-    anotacion = sabor_agua  # Usar sabor como anotación si existe
+    anotacion = sabor_agua
 
-    # Si no es agua, pedir anotación
     if nombre not in ["Agua Chica", "Agua Grande"]:
         anotacion = simpledialog.askstring("Anotación", f"¿Alguna nota para {nombre}? (Ej. sin verdura)")
 
@@ -134,26 +127,26 @@ def agregar_producto(nombre, sabor_agua=None):
         agregar_agua = messagebox.askyesno("Agua fresca", "¿Agregar agua fresca (+$5)?")
         if agregar_agua:
             precio_final += 5
+            grupo_temporal = grupo_actual
             def agregar_sabor(sabor):
-                # Crear el item con la anotación inicial
                 item = {
                     "nombre": nombre,
                     "anotacion": (anotacion or "") + f" (agua fresca {sabor})",
                     "precio": precio_final,
-                    "grupo": grupo_actual
+                    "grupo": grupo_temporal
                 }
                 pedido_actual.append(item)
                 actualizar_ticket()
             mostrar_ventana_sabores("Agua Fresca", callback=agregar_sabor)
             return
 
-    pedido_actual.append({
+    item = {
         "nombre": nombre,
         "anotacion": anotacion,
         "precio": precio_final,
-        "grupo": grupo_actual
-    })
-
+        "grupo": grupo_actual or "General"
+    }
+    pedido_actual.append(item)
     actualizar_ticket()
 
 def crear_grupo():
@@ -184,13 +177,13 @@ def actualizar_ticket():
     else:
         items_agrupados = {}
         for item in pedido_actual:
-            grupo = item.get("grupo") or "General"
+            grupo = item.get("grupo", "General")
             items_agrupados.setdefault(grupo, []).append(item)
 
-        for grupo, items in items_agrupados.items():
+        for grupo in sorted(items_agrupados.keys(), key=lambda x: (x == "General", x)):
             tk.Label(columna_actual, text=f"Grupo: {grupo}", font=("Arial", 11, "bold"), anchor="w", bg="#f5f5f5").pack(anchor="w")
 
-            for i, item in enumerate(items):
+            for i, item in enumerate(items_agrupados[grupo]):
                 if len(columna_actual.winfo_children()) >= max_por_columna:
                     columna_actual = tk.Frame(frame_contenedor, bg="#f5f5f5")
                     columna_actual.pack(side="left", padx=10, anchor="n")
@@ -220,7 +213,8 @@ def guardar_en_historial(fecha_hora, domicilio, total):
     telefono = entry_telefono.get()
     cruces = entry_cruces.get()
     
-    # Formato más legible para el historial
+    items_copy = copy.deepcopy(pedido_actual)
+    
     with open(f"historial_{hoy}.txt", "a", encoding="utf-8") as f:
         f.write(f"===== PEDIDO - {fecha_hora} =====\n")
         f.write(f"Fecha y Hora: {fecha_hora}\n")
@@ -232,13 +226,13 @@ def guardar_en_historial(fecha_hora, domicilio, total):
         f.write("--- Productos ---\n")
 
         items_agrupados = {}
-        for item in pedido_actual:
-            grupo = item.get("grupo") or "General"
+        for item in items_copy:
+            grupo = item.get("grupo", "General")
             items_agrupados.setdefault(grupo, []).append(item)
 
-        for grupo, items in items_agrupados.items():
+        for grupo in sorted(items_agrupados.keys(), key=lambda x: (x == "General", x)):
             f.write(f"\nCliente: {grupo.upper()}\n")
-            for item in items:
+            for item in items_agrupados[grupo]:
                 f.write(f"  - {item['nombre']} (${item['precio']})\n")
                 if item['anotacion']:
                     f.write(dividir_texto(item['anotacion'], 32, "    Nota: ") + "\n")
@@ -248,37 +242,53 @@ def guardar_en_historial(fecha_hora, domicilio, total):
 
 def imprimir_texto(texto, doc_name="Documento"):
     try:
-        # Obtener la impresora predeterminada
         printer_name = win32print.GetDefaultPrinter()
+        if not printer_name:
+            messagebox.showerror("Error", "No se encontró una impresora predeterminada. Configura una en el sistema.")
+            return
+        
         hprinter = win32print.OpenPrinter(printer_name)
         
-        # Iniciar trabajo de impresión
         hdc = win32ui.CreateDC()
-        hdc.CreatePrinterDC(printer_name)
+        try:
+            hdc.CreatePrinterDC(printer_name)
+        except win32ui.error as e:
+            messagebox.showerror("Error", f"No se pudo crear el contexto de dispositivo: {str(e)}")
+            win32print.ClosePrinter(hprinter)
+            return
+        
         hdc.StartDoc(doc_name)
         hdc.StartPage()
 
-        # Configurar fuente
-        font = win32ui.CreateFont({
-            "name": "Courier New",
-            "height": 20,
-            "weight": FW_NORMAL
-        })
-        hdc.SelectObject(font)
+        try:
+            font = win32ui.CreateFont({
+                "name": "Courier New",
+                "height": 20,
+                "weight": FW_NORMAL
+            })
+            hdc.SelectObject(font)
+        except win32ui.error as e:
+            messagebox.showerror("Error", f"No se pudo seleccionar la fuente 'Courier New': {str(e)}")
+            hdc.EndPage()
+            hdc.EndDoc()
+            win32print.ClosePrinter(hprinter)
+            return
 
-        # Imprimir líneas del texto
         y = 100
         for line in texto.split('\n'):
             hdc.TextOut(100, y, line.rstrip())
             y += 50
 
-        # Finalizar impresión
         hdc.EndPage()
         hdc.EndDoc()
+        
         win32print.ClosePrinter(hprinter)
+        
         messagebox.showinfo("Éxito", f"{doc_name} impreso correctamente.")
+    except win32print.error as e:
+        messagebox.showerror("Error", f"Error al acceder a la impresora: {str(e)}. Verifica que esté conectada y configurada.")
     except Exception as e:
-        messagebox.showerror("Error", f"No se pudo imprimir: {str(e)}")
+        messagebox.showerror("Error", f"No se pudo imprimir: {str(e)}. Contacta al soporte con este mensaje.")
 
 def imprimir_ticket_personalizado(fecha, domicilio, telefono, cruces, total, items):
     global hora_especifica
@@ -296,13 +306,13 @@ Fecha: {fecha}
 
     items_agrupados = {}
     for item in items:
-        grupo = item.get("grupo") or "General"
+        grupo = item.get("grupo", "General")
         items_agrupados.setdefault(grupo, []).append(item)
 
-    for grupo, items in items_agrupados.items():
+    for grupo in sorted(items_agrupados.keys(), key=lambda x: (x == "General", x)):
         ticket += "-" * 32 + "\n"
         ticket += f"\nCliente= {grupo.upper()}\n"
-        for item in items:
+        for item in items_agrupados[grupo]:
             ticket += f"{item['nombre']} (${item['precio']})\n"
             if item['anotacion']:
                 ticket += dividir_texto(item['anotacion']) + "\n"
@@ -326,12 +336,12 @@ def imprimir_ticket():
     fecha_hora = datetime.now().strftime("%Y-%m-%d %H:%M")
     total = sum(item['precio'] for item in pedido_actual)
 
-    ticket = imprimir_ticket_personalizado(fecha_hora, domicilio, telefono, cruces, total, pedido_actual)
+    items_copy = copy.deepcopy(pedido_actual)
 
-    # Guardar en historial
     guardar_en_historial(fecha_hora, domicilio, total)
 
-    # Imprimir directamente
+    ticket = imprimir_ticket_personalizado(fecha_hora, domicilio, telefono, cruces, total, items_copy)
+
     imprimir_texto(ticket, "Ticket")
 
 def imprimir_ticket_directo(ticket_texto):
@@ -351,13 +361,13 @@ Fecha: {fecha}
 
     items_agrupados = {}
     for item in items:
-        grupo = item.get("grupo") or "General"
+        grupo = item.get("grupo", "General")
         items_agrupados.setdefault(grupo, []).append(item)
 
-    for grupo, items in items_agrupados.items():
+    for grupo in sorted(items_agrupados.keys(), key=lambda x: (x == "General", x)):
         ticket += "-" * 32 + "\n"
         ticket += f"\nCliente= {grupo.upper()}\n"
-        for item in items:
+        for item in items_agrupados[grupo]:
             ticket += f"{item['nombre']} (${item['precio']})\n"
             if item['anotacion']:
                 ticket += dividir_texto(item['anotacion']) + "\n"
@@ -396,7 +406,7 @@ def mostrar_resumen_dia():
     pedidos = []
     with open(archivo, "r", encoding="utf-8") as f:
         contenido = f.read().strip().split("===== PEDIDO - ")
-        for pedido in contenido[1:]:  # Ignorar el primer elemento vacío
+        for pedido in contenido[1:]:
             lineas = pedido.strip().split("\n")
             if len(lineas) < 2:
                 continue
@@ -425,7 +435,6 @@ def mostrar_resumen_dia():
     resumen += f"TOTAL GENERAL: ${total_general}\n"
     resumen += "="*32 + "\n"
 
-    # Mostrar ventana emergente con el resumen
     ventana_resumen = tk.Toplevel(ventana)
     ventana_resumen.title("Resumen del Día")
     ventana_resumen.geometry("600x700")
@@ -478,7 +487,7 @@ def mostrar_lista_pedidos():
     pedido_actual = []
     for linea in lineas:
         if linea.startswith("===== PEDIDO - "):
-            if pedido_actual:  # Procesar el pedido anterior
+            if pedido_actual:
                 fecha_hora = pedido_actual[0].replace("===== PEDIDO - ", "").strip()
                 domicilio = ""
                 total = 0
@@ -505,14 +514,13 @@ def mostrar_lista_pedidos():
                         items.append({"nombre": nombre, "precio": precio, "anotacion": None, "grupo": None})
                     elif l.startswith("    Nota:"):
                         anotacion_actual.append(l.replace("    Nota: ", ""))
-                    elif l.startswith("      "):  # Líneas continuas de la anotación
+                    elif l.startswith("      "):
                         anotacion_actual.append(l.strip())
                     elif l.startswith("Cliente:"):
                         grupo = l.replace("Cliente:", "").strip()
                         for item in items:
                             item["grupo"] = grupo
 
-                # Asegurarse de asignar la última anotación
                 if items and anotacion_actual:
                     items[-1]["anotacion"] = " ".join(anotacion_actual).strip()
 
@@ -530,7 +538,6 @@ def mostrar_lista_pedidos():
         else:
             pedido_actual.append(linea)
 
-    # Procesar el último pedido
     if pedido_actual:
         fecha_hora = pedido_actual[0].replace("===== PEDIDO - ", "").strip()
         domicilio = ""
@@ -558,14 +565,13 @@ def mostrar_lista_pedidos():
                 items.append({"nombre": nombre, "precio": precio, "anotacion": None, "grupo": None})
             elif l.startswith("    Nota:"):
                 anotacion_actual.append(l.replace("    Nota: ", ""))
-            elif l.startswith("      "):  # Líneas continuas de la anotación
+            elif l.startswith("      "):
                 anotacion_actual.append(l.strip())
             elif l.startswith("Cliente:"):
                 grupo = l.replace("Cliente:", "").strip()
                 for item in items:
                     item["grupo"] = grupo
 
-        # Asegurarse de asignar la última anotación
         if items and anotacion_actual:
             items[-1]["anotacion"] = " ".join(anotacion_actual).strip()
 
@@ -588,13 +594,12 @@ def limpiar_pedido():
     entry_telefono.delete(0, tk.END)
     entry_cruces.delete(0, tk.END)
     hora_especifica = None
-    var_hora.set(0)  # Restablecer a "No"
+    var_hora.set(0)
     entry_hora.delete(0, tk.END)
     entry_hora.config(state="disabled")
     if ventana_sabores:
         ventana_sabores.destroy()
         ventana_sabores = None
-    grupo_actual = "General"  # Reiniciar el cliente a "General"
     actualizar_ticket()
 
 def cambiar_contrasena():
@@ -620,42 +625,38 @@ def cambiar_contrasena():
 
 def toggle_hora_entry():
     global hora_especifica
-    if var_hora.get() == 1:  # Si se selecciona "Sí"
+    if var_hora.get() == 1:
         entry_hora.config(state="normal")
         entry_hora.focus()
-    else:  # Si se selecciona "No"
+    else:
         entry_hora.config(state="disabled")
         entry_hora.delete(0, tk.END)
         hora_especifica = None
 
-# Configuración de la ventana principal
 ventana = tk.Tk()
 ventana.title("Tortas Ahogadas Doña Susy")
 ventana.geometry("1280x720")
-ventana.configure(bg="#f0f0f0")  # Fondo gris claro
+ventana.configure(bg="#f0f0f0")
 
 frame_principal = tk.Frame(ventana, bg="#f0f0f0")
 frame_principal.pack(fill="both", expand=True, padx=20, pady=20)
 
-# Panel izquierdo
 panel_izquierdo = tk.Frame(frame_principal, bg="#ffffff", bd=2, relief="groove")
 panel_izquierdo.pack(side="left", fill="y", padx=10, pady=10)
 
 frame_superior_izq = tk.Frame(panel_izquierdo, bg="#ffffff")
 frame_superior_izq.pack(fill="x", padx=10, pady=10)
 
-# Título
 tk.Label(
     frame_superior_izq,
     text="Tortas Ahogadas Doña Susy",
     font=("Montserrat", 24, "bold"),
     bg="#ffffff",
-    fg="#a52a2a",  # Un tono marrón rojizo más cálido y tradicional
+    fg="#a52a2a",
     padx=50,
     pady=10
 ).pack(anchor="w")
 
-# Frame para los campos de entrada (Domicilio, Teléfono, Cruces, Hora) con fondo resaltado
 frame_datos = tk.Frame(frame_superior_izq, bg="#e3e1e1", bd=3, relief="ridge")
 frame_datos.pack(fill="x", padx=5, pady=10)
 
@@ -668,11 +669,10 @@ for texto, entry_name in [("Domicilio:", "entry_domicilio"), ("Teléfono:", "ent
     globals()[entry_name] = tk.Entry(frame_entrada, width=50, font=("Arial", 10), relief="flat", bg="#ffffff")
     globals()[entry_name].pack(side="left", padx=5)
 
-# Apartado Hora en específico
 frame_hora = tk.Frame(frame_datos, bg="#e3e1e1")
 frame_hora.pack(fill="x", padx=10, pady=5)
 tk.Label(frame_hora, text="Hora en específico:", bg="#e3e1e1", font=("Arial", 10)).pack(side="left")
-var_hora = tk.IntVar(value=0)  # Por defecto "No"
+var_hora = tk.IntVar(value=0)
 tk.Radiobutton(frame_hora, text="Sí", variable=var_hora, value=1, bg="#e3e1e1", font=("Arial", 10), command=toggle_hora_entry).pack(side="left", padx=5)
 tk.Radiobutton(frame_hora, text="No", variable=var_hora, value=0, bg="#e3e1e1", font=("Arial", 10), command=toggle_hora_entry).pack(side="left", padx=5)
 entry_hora = tk.Entry(frame_hora, width=20, font=("Arial", 10), relief="flat", bg="#ffffff", state="disabled")
@@ -685,19 +685,15 @@ def actualizar_hora(event):
         hora_especifica = None
 entry_hora.bind("<KeyRelease>", actualizar_hora)
 
-# Etiqueta de productos
 tk.Label(frame_superior_izq, text="\nSelecciona productos:", bg="#ffffff", font=("Arial", 12, "bold")).pack(pady=5)
 
-# Contenedor para las columnas de productos
 frame_botones = tk.Frame(frame_superior_izq, bg="#ffffff")
 frame_botones.pack(pady=10)
 
-# Definir productos por categoría
 bebidas = ["Refresco", "Agua Chica", "Agua Grande", "Caguama", "Cerveza"]
 comida = ["Torta", "Taco Dorado", "Taco Blandito"]
 paquetes = ["Paquete 1", "Paquete 2"]
 
-# Columna de Bebidas
 frame_bebidas = tk.Frame(frame_botones, bg="#ffffff")
 frame_bebidas.pack(side="left", padx=10)
 tk.Label(frame_bebidas, text="Bebidas", font=("Arial", 12, "bold"), bg="#ffffff").pack(pady=5)
@@ -708,7 +704,6 @@ for nombre in bebidas:
     btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#ffb300"))
     btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#ffca28"))
 
-# Columna de Comida
 frame_comida = tk.Frame(frame_botones, bg="#ffffff")
 frame_comida.pack(side="left", padx=10)
 tk.Label(frame_comida, text="Comida", font=("Arial", 12, "bold"), bg="#ffffff").pack(pady=5)
@@ -719,7 +714,6 @@ for nombre in comida:
     btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#ffb300"))
     btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#ffca28"))
 
-# Columna de Paquetes
 frame_paquetes = tk.Frame(frame_botones, bg="#ffffff")
 frame_paquetes.pack(side="left", padx=10)
 tk.Label(frame_paquetes, text="Paquetes", font=("Arial", 12, "bold"), bg="#ffffff").pack(pady=5)
@@ -730,12 +724,10 @@ for nombre in paquetes:
     btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#ffb300"))
     btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#ffca28"))
 
-# Botones de acciones
 tk.Button(frame_superior_izq, text="Agregar Cliente", command=crear_grupo, bg="#ff9800", fg="white", font=("Arial", 10), relief="raised", width=20).pack(pady=10)
 tk.Button(frame_superior_izq, text="Imprimir Ticket", command=imprimir_ticket, bg="#4caf50", fg="white", font=("Arial", 10), relief="raised", width=20).pack(pady=5)
 tk.Button(frame_superior_izq, text="Limpiar Pedido", command=limpiar_pedido, bg="#e57373", fg="white", font=("Arial", 10), relief="raised", width=20).pack(pady=5)
 
-# Panel derecho (resumen)
 panel_derecho = tk.Frame(frame_principal, bg="#ffffff", bd=2, relief="groove")
 panel_derecho.pack(side="right", fill="both", expand=True, padx=10, pady=10)
 
@@ -743,14 +735,12 @@ tk.Label(panel_derecho, text="Resumen del Pedido:", font=("Arial", 16, "bold"), 
 frame_resumen = tk.Frame(panel_derecho, bg="#ffffff")
 frame_resumen.pack(fill="both", expand=True, anchor="n", padx=10)
 
-# Botones superiores
 boton_resumen = tk.Button(frame_principal, text="Resumen del Día", command=mostrar_resumen_dia, bg="#0288d1", fg="white", font=("Arial", 10), relief="raised", width=15)
 boton_resumen.pack(side="top", anchor="ne", pady=5, padx=10)
 
 boton_lista = tk.Button(frame_principal, text="Lista de Pedidos", command=mostrar_lista_pedidos, bg="#7b1fa2", fg="white", font=("Arial", 10), relief="raised", width=15)
 boton_lista.pack(side="top", anchor="ne", padx=10)
 
-# Barra inferior
 frame_footer = tk.Frame(ventana, bg="#f0f0f0")
 frame_footer.pack(side="bottom", fill="x")
 
