@@ -140,4 +140,5 @@ La base de datos no incluye una interfaz para eliminar o editar clientes directa
 
 
 Desarrollado por: BrianP
+
 Fecha: Mayo de 2025
