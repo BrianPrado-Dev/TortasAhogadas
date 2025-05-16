@@ -16,7 +16,7 @@ menu_productos = {
     "Agua Chica": 15,
     "Agua Grande": 25,
     "Paquete 1": 80,
-    "Paquete 2": 90,
+    "Paquete 2": 85,
     "Caguama": 70,
     "Cerveza": 25
 }
@@ -77,24 +77,26 @@ def mostrar_ventana_sabores(nombre, callback=None):
 
     ventana_sabores = tk.Toplevel(ventana)
     ventana_sabores.title("Seleccionar Sabor")
-    ventana_sabores.geometry("300x150")
+    screen_width = ventana.winfo_screenwidth()
+    screen_height = ventana.winfo_screenheight()
+    ventana_sabores.geometry(f"{int(screen_width*0.25)}x{int(screen_height*0.2)}")
     ventana_sabores.configure(bg="#faf2d3")
-    ventana_sabores.resizable(False, False)
+    ventana_sabores.resizable(True, True)
 
-    tk.Label(ventana_sabores, text=f"Selecciona el sabor para {nombre}", font=("Roboto", 12, "bold"), bg="#faf2d3", fg="#3e2723").pack(pady=15)
+    tk.Label(ventana_sabores, text=f"Selecciona el sabor para {nombre}", font=("Roboto", 12, "bold"), bg="#faf2d3", fg="#3e2723").pack(pady=15, fill="x")
 
     frame_btn_sabores = tk.Frame(ventana_sabores, bg="#faf2d3")
-    frame_btn_sabores.pack(pady=10)
+    frame_btn_sabores.pack(pady=10, fill="both", expand=True)
 
     btn_jamaica = tk.Button(frame_btn_sabores, text="Jamaica", width=12, height=2, font=("Roboto", 10), bg="#4caf50", fg="white", relief="flat",
                             activebackground="#388e3c", command=lambda: [callback("Jamaica") if callback else agregar_producto(nombre, "Jamaica"), ventana_sabores.destroy()])
-    btn_jamaica.pack(side="left", padx=10)
+    btn_jamaica.pack(side="left", padx=10, expand=True)
     btn_jamaica.bind("<Enter>", lambda e: btn_jamaica.config(bg="#388e3c"))
     btn_jamaica.bind("<Leave>", lambda e: btn_jamaica.config(bg="#4caf50"))
 
     btn_horchata = tk.Button(frame_btn_sabores, text="Horchata", width=12, height=2, font=("Roboto", 10), bg="#4caf50", fg="white", relief="flat",
                              activebackground="#388e3c", command=lambda: [callback("Horchata") if callback else agregar_producto(nombre, "Horchata"), ventana_sabores.destroy()])
-    btn_horchata.pack(side="left", padx=10)
+    btn_horchata.pack(side="left", padx=10, expand=True)
     btn_horchata.bind("<Enter>", lambda e: btn_horchata.config(bg="#388e3c"))
     btn_horchata.bind("<Leave>", lambda e: btn_horchata.config(bg="#4caf50"))
 
@@ -131,7 +133,7 @@ def agregar_producto(nombre, sabor_agua=None):
             def agregar_sabor(sabor):
                 item = {
                     "nombre": nombre,
-                    "anotacion": (anotacion or "") + f" (agua fresca {sabor})",
+                    "anotacion": (anotacion or "") + f"(agua fresca {sabor})",
                     "precio": precio_final,
                     "grupo": grupo_temporal
                 }
@@ -162,18 +164,23 @@ def actualizar_ticket():
     for widget in frame_resumen.winfo_children():
         widget.destroy()
 
-    frame_contenedor = tk.Frame(frame_resumen, bd=1, relief="flat", bg="#ffffff")
-    frame_contenedor.pack(fill="both", expand=True, padx=15, pady=15)
+    canvas = tk.Canvas(frame_resumen, bg="#ffffff")
+    scrollbar = tk.Scrollbar(frame_resumen, orient="vertical", command=canvas.yview)
+    frame_contenedor = tk.Frame(canvas, bg="#ffffff")
+
+    frame_contenedor.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+    canvas.create_window((0, 0), window=frame_contenedor, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
 
     total = 0
-    max_por_columna = 15
-    columnas = []
     columna_actual = tk.Frame(frame_contenedor, bg="#ffffff")
-    columna_actual.pack(side="left", padx=15, anchor="n")
-    columnas.append(columna_actual)
+    columna_actual.pack(fill="x", padx=15, anchor="n")
 
     if not pedido_actual:
-        tk.Label(columna_actual, text="(Sin productos aún)", font=("Roboto", 11, "italic"), fg="#6d4c41", bg="#ffffff").pack(pady=15)
+        tk.Label(columna_actual, text="(Sin productos aún)", font=("Roboto", 12, "italic"), fg="#6d4c41", bg="#ffffff").pack(pady=15)
     else:
         items_agrupados = {}
         for item in pedido_actual:
@@ -181,14 +188,9 @@ def actualizar_ticket():
             items_agrupados.setdefault(grupo, []).append(item)
 
         for grupo in sorted(items_agrupados.keys(), key=lambda x: (x == "General", x)):
-            tk.Label(columna_actual, text=f"Grupo: {grupo}", font=("Roboto", 12, "bold"), anchor="w", bg="#ffffff", fg="#3e2723").pack(anchor="w", pady=5)
+            tk.Label(columna_actual, text=f"Grupo: {grupo}", font=("Roboto", 14, "bold"), anchor="w", bg="#ffffff", fg="#3e2723").pack(anchor="w", pady=5)
 
-            for i, item in enumerate(items_agrupados[grupo]):
-                if len(columna_actual.winfo_children()) >= max_por_columna:
-                    columna_actual = tk.Frame(frame_contenedor, bg="#ffffff")
-                    columna_actual.pack(side="left", padx=15, anchor="n")
-                    columnas.append(columna_actual)
-
+            for item in items_agrupados[grupo]:
                 texto = f"{item['nombre']} (${item['precio']})"
                 if item["anotacion"]:
                     texto += f"\n{dividir_texto(item['anotacion'])}"
@@ -196,16 +198,19 @@ def actualizar_ticket():
                 fila = tk.Frame(columna_actual, bg="#ffffff")
                 fila.pack(fill="x", pady=3)
 
-                tk.Label(fila, text=texto, anchor="w", justify="left", bg="#ffffff", font=("Roboto", 10), fg="#3e2723").pack(side="left")
+                tk.Label(fila, text=texto, anchor="w", justify="left", bg="#ffffff", font=("Roboto", 12), fg="#3e2723").pack(side="left", fill="x", expand=True)
                 idx = pedido_actual.index(item)
-                btn_eliminar = tk.Button(fila, text="X", fg="white", bg="#d32f2f", command=lambda idx=idx: eliminar_item(idx), width=3, relief="flat", font=("Roboto", 8))
+                btn_eliminar = tk.Button(fila, text="X", fg="white", bg="#d32f2f", command=lambda idx=idx: eliminar_item(idx), width=3, relief="flat", font=("Roboto", 10))
                 btn_eliminar.pack(side="right")
                 btn_eliminar.bind("<Enter>", lambda e: btn_eliminar.config(bg="#b71c1c"))
                 btn_eliminar.bind("<Leave>", lambda e: btn_eliminar.config(bg="#d32f2f"))
 
                 total += item['precio']
 
-    tk.Label(frame_resumen, text=f"TOTAL: ${total}", font=("Roboto", 14, "bold"), bg="#ffca28", fg="#3e2723", pady=10, padx=15, relief="flat").pack(pady=15, anchor="w")
+    frame_total = tk.Frame(frame_resumen, bg="#ffffff")
+    frame_total.pack(pady=15, anchor="w")
+    tk.Label(frame_total, text="TOTAL:", font=("Roboto", 14, "bold"), bg="#ffffff", fg="#000000", pady=10, padx=5, relief="flat").pack(side="left")
+    tk.Label(frame_total, text=f"${total}", font=("Roboto", 14, "bold"), bg="#ffffff", fg="#d32f2f", pady=10, padx=5, relief="flat").pack(side="left")
 
 def eliminar_item(indice):
     del pedido_actual[indice]
@@ -266,7 +271,7 @@ def imprimir_texto(texto, doc_name="Documento"):
         try:
             font = win32ui.CreateFont({
                 "name": "Courier New",
-                "height": 20,
+                "height": 70,
                 "weight": FW_NORMAL
             })
             hdc.SelectObject(font)
@@ -277,10 +282,10 @@ def imprimir_texto(texto, doc_name="Documento"):
             win32print.ClosePrinter(hprinter)
             return
 
-        y = 100
+        y = 50
         for line in texto.split('\n'):
-            hdc.TextOut(100, y, line.rstrip())
-            y += 50
+            hdc.TextOut(50, y, line.rstrip())
+            y += 110
 
         hdc.EndPage()
         hdc.EndDoc()
@@ -297,6 +302,9 @@ def imprimir_ticket_personalizado(fecha, domicilio, telefono, cruces, total, ite
     global hora_especifica
     ticket = f"""
 {centrar("TORTAS AHOGADAS DOÑA SUSY")}
+{centrar("Geranio #869A")}
+{centrar("Col.Tulipanes CP:45647")}
+{centrar("33-3684-4525")}
 {"=" * 32}
 Domicilio: {limitar(domicilio)}
 Teléfono: {limitar(telefono)}
@@ -313,7 +321,7 @@ Fecha: {fecha}
         items_agrupados.setdefault(grupo, []).append(item)
 
     for grupo in sorted(items_agrupados.keys(), key=lambda x: (x == "General", x)):
-        ticket += "-" * 32 + "\n"
+        ticket += "-" * 32 
         ticket += f"\nCliente= {grupo.upper()}\n"
         for item in items_agrupados[grupo]:
             ticket += f"{item['nombre']} (${item['precio']})\n"
@@ -440,7 +448,9 @@ def mostrar_resumen_dia():
 
     ventana_resumen = tk.Toplevel(ventana)
     ventana_resumen.title("Resumen del Día")
-    ventana_resumen.geometry("600x700")
+    screen_width = ventana.winfo_screenwidth()
+    screen_height = ventana.winfo_screenheight()
+    ventana_resumen.geometry(f"{int(screen_width*0.5)}x{int(screen_height*0.7)}")
     ventana_resumen.configure(bg="#faf2d3")
 
     canvas = tk.Canvas(ventana_resumen, bg="#ffffff")
@@ -472,12 +482,11 @@ def mostrar_lista_pedidos():
         messagebox.showinfo("Sin historial", "No hay pedidos para mostrar hoy.")
         return
 
-    with open(archivo, "r", encoding="utf-8") as f:
-        lineas = f.readlines()
-
     ventana_lista = tk.Toplevel(ventana)
     ventana_lista.title("Lista de pedidos del día")
-    ventana_lista.geometry("600x700")
+    screen_width = ventana.winfo_screenwidth()
+    screen_height = ventana.winfo_screenheight()
+    ventana_lista.geometry(f"{int(screen_width*0.5)}x{int(screen_height*0.7)}")
     ventana_lista.configure(bg="#faf2d3")
 
     canvas = tk.Canvas(ventana_lista, bg="#ffffff")
@@ -491,95 +500,50 @@ def mostrar_lista_pedidos():
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar.pack(side="right", fill="y")
 
-    pedido_actual = []
-    for linea in lineas:
-        if linea.startswith("===== PEDIDO - "):
-            if pedido_actual:
-                fecha_hora = pedido_actual[0].replace("===== PEDIDO - ", "").strip()
-                domicilio = ""
-                total = 0
-                telefono = ""
-                cruces = ""
-                items = []
-                anotacion_actual = []
-                for l in pedido_actual:
-                    if l.startswith("Domicilio:"):
-                        domicilio = l.replace("Domicilio:", "").strip()
-                    elif l.startswith("Teléfono:"):
-                        telefono = l.replace("Teléfono:", "").strip()
-                    elif l.startswith("Cruces:"):
-                        cruces = l.replace("Cruces:", "").strip()
-                    elif l.startswith("Total:"):
-                        total = int(l.replace("Total:", "").replace("$", "").strip())
-                    elif l.startswith("  - "):
-                        if items and anotacion_actual:
-                            items[-1]["anotacion"] = " ".join(anotacion_actual).strip()
-                            anotacion_actual = []
-                        nombre_precio = l.replace("  - ", "").strip()
-                        nombre, precio = nombre_precio.split(" ($")
-                        precio = int(precio.replace(")", ""))
-                        items.append({"nombre": nombre, "precio": precio, "anotacion": None, "grupo": None})
-                    elif l.startswith("    Nota:"):
-                        anotacion_actual.append(l.replace("    Nota: ", ""))
-                    elif l.startswith("      "):
-                        anotacion_actual.append(l.strip())
-                    elif l.startswith("Cliente:"):
-                        grupo = l.replace("Cliente:", "").strip()
-                        for item in items:
-                            item["grupo"] = grupo
+    with open(archivo, "r", encoding="utf-8") as f:
+        contenido = f.read().strip().split("===== PEDIDO - ")[1:]
 
-                if items and anotacion_actual:
-                    items[-1]["anotacion"] = " ".join(anotacion_actual).strip()
+    for pedido in contenido:
+        lineas = pedido.strip().split("\n")
+        if not lineas:
+            continue
 
-                ticket = imprimir_ticket_personalizado(fecha_hora, domicilio, telefono, cruces, total, items)
-
-                marco = tk.Frame(frame_pedidos, bd=1, relief="flat", padx=10, pady=10, bg="#ffffff")
-                marco.pack(fill="x", padx=15, pady=10)
-
-                tk.Label(marco, text=ticket, justify="left", font=("Courier New", 10), anchor="w", bg="#ffffff", fg="#3e2723").pack(side="left", fill="x", expand=True)
-
-                boton_imprimir = tk.Button(marco, text="Imprimir", bg="#4caf50", fg="white", width=10, height=2, relief="flat", font=("Roboto", 10), command=lambda t=ticket: imprimir_ticket_directo(t))
-                boton_imprimir.pack(side="right", padx=10, pady=10)
-                boton_imprimir.bind("<Enter>", lambda e: boton_imprimir.config(bg="#388e3c"))
-                boton_imprimir.bind("<Leave>", lambda e: boton_imprimir.config(bg="#4caf50"))
-
-            pedido_actual = [linea]
-        else:
-            pedido_actual.append(linea)
-
-    if pedido_actual:
-        fecha_hora = pedido_actual[0].replace("===== PEDIDO - ", "").strip()
+        fecha_hora = lineas[0].strip()
         domicilio = ""
-        total = 0
         telefono = ""
         cruces = ""
+        hora_espec = None
+        total = 0
         items = []
+        grupo_actual = None
         anotacion_actual = []
-        for l in pedido_actual:
-            if l.startswith("Domicilio:"):
-                domicilio = l.replace("Domicilio:", "").strip()
-            elif l.startswith("Teléfono:"):
-                telefono = l.replace("Teléfono:", "").strip()
-            elif l.startswith("Cruces:"):
-                cruces = l.replace("Cruces:", "").strip()
-            elif l.startswith("Total:"):
-                total = int(l.replace("Total:", "").replace("$", "").strip())
-            elif l.startswith("  - "):
+
+        for linea in lineas[1:]:
+            if linea.startswith("Domicilio:"):
+                domicilio = linea.replace("Domicilio:", "").strip()
+            elif linea.startswith("Teléfono:"):
+                telefono = linea.replace("Teléfono:", "").strip()
+            elif linea.startswith("Cruces:"):
+                cruces = linea.replace("Cruces:", "").strip()
+            elif linea.startswith("Hora Específica:"):
+                hora_espec = linea.replace("Hora Específica:", "").strip()
+            elif linea.startswith("Total:"):
+                total = int(linea.replace("Total:", "").replace("$", "").strip())
+            elif linea.startswith("Cliente:"):
+                grupo_actual = linea.replace("Cliente:", "").strip()
+            elif linea.startswith("  - "):
                 if items and anotacion_actual:
                     items[-1]["anotacion"] = " ".join(anotacion_actual).strip()
                     anotacion_actual = []
-                nombre_precio = l.replace("  - ", "").strip()
-                nombre, precio = nombre_precio.split(" ($")
-                precio = int(precio.replace(")", ""))
-                items.append({"nombre": nombre, "precio": precio, "anotacion": None, "grupo": None})
-            elif l.startswith("    Nota:"):
-                anotacion_actual.append(l.replace("    Nota: ", ""))
-            elif l.startswith("      "):
-                anotacion_actual.append(l.strip())
-            elif l.startswith("Cliente:"):
-                grupo = l.replace("Cliente:", "").strip()
-                for item in items:
-                    item["grupo"] = grupo
+                nombre_precio = linea.replace("  - ", "").strip()
+                try:
+                    nombre, precio = nombre_precio.split(" ($")
+                    precio = int(precio.replace(")", ""))
+                    items.append({"nombre": nombre, "precio": precio, "anotacion": None, "grupo": grupo_actual})
+                except ValueError:
+                    continue
+            elif linea.startswith("    Nota:") or linea.startswith("      "):
+                anotacion_actual.append(linea.replace("    Nota: ", "").strip())
 
         if items and anotacion_actual:
             items[-1]["anotacion"] = " ".join(anotacion_actual).strip()
@@ -646,17 +610,20 @@ def toggle_hora_entry():
 
 ventana = tk.Tk()
 ventana.title("Tortas Ahogadas Doña Susy")
-ventana.geometry("1280x720")
+screen_width = ventana.winfo_screenwidth()
+screen_height = ventana.winfo_screenheight()
+ventana.geometry(f"{int(screen_width*0.9)}x{int(screen_height*0.9)}")
 ventana.configure(bg="#f5e8c7")
+ventana.resizable(True, True)
 
 frame_principal = tk.Frame(ventana, bg="#f5e8c7")
 frame_principal.pack(fill="both", expand=True, padx=20, pady=20)
 
 panel_izquierdo = tk.Frame(frame_principal, bg="#ffffff", bd=1, relief="flat")
-panel_izquierdo.pack(side="left", fill="y", padx=15, pady=15)
+panel_izquierdo.pack(side="left", fill="y", padx=15, pady=15, expand=True)
 
 frame_superior_izq = tk.Frame(panel_izquierdo, bg="#ffffff")
-frame_superior_izq.pack(fill="x", padx=15, pady=15)
+frame_superior_izq.pack(fill="both", padx=15, pady=15, expand=True)
 
 tk.Label(
     frame_superior_izq,
@@ -665,7 +632,7 @@ tk.Label(
     bg="#ffffff",
     fg="#d32f2f",
     pady=15
-).pack(anchor="w")
+).pack(anchor="w", fill="x")
 
 frame_datos = tk.Frame(frame_superior_izq, bg="#faf2d3", bd=1, relief="flat")
 frame_datos.pack(fill="x", padx=10, pady=10)
@@ -677,7 +644,7 @@ for texto, entry_name in [("Domicilio:", "entry_domicilio"), ("Teléfono:", "ent
     frame_entrada.pack(fill="x", padx=15, pady=5)
     tk.Label(frame_entrada, text=texto, bg="#faf2d3", font=("Roboto", 11), fg="#3e2723").pack(side="left")
     globals()[entry_name] = tk.Entry(frame_entrada, width=50, font=("Roboto", 11), relief="flat", bg="#ffffff", bd=1)
-    globals()[entry_name].pack(side="left", padx=10)
+    globals()[entry_name].pack(side="left", padx=10, fill="x", expand=True)
 
 frame_hora = tk.Frame(frame_datos, bg="#faf2d3")
 frame_hora.pack(fill="x", padx=15, pady=5)
@@ -686,7 +653,7 @@ var_hora = tk.IntVar(value=0)
 tk.Radiobutton(frame_hora, text="Sí", variable=var_hora, value=1, bg="#faf2d3", font=("Roboto", 10), fg="#3e2723", command=toggle_hora_entry).pack(side="left", padx=10)
 tk.Radiobutton(frame_hora, text="No", variable=var_hora, value=0, bg="#faf2d3", font=("Roboto", 10), fg="#3e2723", command=toggle_hora_entry).pack(side="left", padx=10)
 entry_hora = tk.Entry(frame_hora, width=20, font=("Roboto", 11), relief="flat", bg="#ffffff", bd=1, state="disabled")
-entry_hora.pack(side="left", padx=10)
+entry_hora.pack(side="left", padx=10, fill="x", expand=True)
 def actualizar_hora(event):
     global hora_especifica
     if var_hora.get() == 1:
@@ -695,53 +662,53 @@ def actualizar_hora(event):
         hora_especifica = None
 entry_hora.bind("<KeyRelease>", actualizar_hora)
 
-tk.Label(frame_superior_izq, text="\nSelecciona productos:", bg="#ffffff", font=("Roboto", 14, "bold"), fg="#3e2723").pack(pady=10)
+tk.Label(frame_superior_izq, text="\nSelecciona productos:", bg="#ffffff", font=("Roboto", 14, "bold"), fg="#3e2723").pack(pady=10, fill="x")
 
 frame_botones = tk.Frame(frame_superior_izq, bg="#ffffff")
-frame_botones.pack(pady=15)
+frame_botones.pack(pady=15, fill="both", expand=True)
 
 bebidas = ["Refresco", "Agua Chica", "Agua Grande", "Caguama", "Cerveza"]
 comida = ["Torta", "Taco Dorado", "Taco Blandito"]
 paquetes = ["Paquete 1", "Paquete 2"]
 
 frame_bebidas = tk.Frame(frame_botones, bg="#ffffff")
-frame_bebidas.pack(side="left", padx=15)
+frame_bebidas.pack(side="left", padx=15, fill="y")
 tk.Label(frame_bebidas, text="Bebidas", font=("Roboto", 12, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=8)
 for nombre in bebidas:
     btn = tk.Button(frame_bebidas, text=nombre, width=15, height=2, font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
                     activebackground="#ef6c00", command=lambda n=nombre: mostrar_ventana_sabores(n) if n in ["Agua Chica", "Agua Grande"] else agregar_producto(n))
-    btn.pack(pady=5)
+    btn.pack(pady=5, fill="x")
     btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#ef6c00"))
     btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#ff6f00"))
 
 frame_comida = tk.Frame(frame_botones, bg="#ffffff")
-frame_comida.pack(side="left", padx=15)
+frame_comida.pack(side="left", padx=15, fill="y")
 tk.Label(frame_comida, text="Comida", font=("Roboto", 12, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=8)
 for nombre in comida:
     btn = tk.Button(frame_comida, text=nombre, width=15, height=2, font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
                     activebackground="#ef6c00", command=lambda n=nombre: agregar_producto(n))
-    btn.pack(pady=5)
+    btn.pack(pady=5, fill="x")
     btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#ef6c00"))
     btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#ff6f00"))
 
 frame_paquetes = tk.Frame(frame_botones, bg="#ffffff")
-frame_paquetes.pack(side="left", padx=15)
+frame_paquetes.pack(side="left", padx=15, fill="y")
 tk.Label(frame_paquetes, text="Paquetes", font=("Roboto", 12, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=8)
 for nombre in paquetes:
     btn = tk.Button(frame_paquetes, text=nombre, width=15, height=2, font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
                     activebackground="#ef6c00", command=lambda n=nombre: agregar_producto(n))
-    btn.pack(pady=5)
+    btn.pack(pady=5, fill="x")
     btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#ef6c00"))
     btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#ff6f00"))
 
-tk.Button(frame_superior_izq, text="Agregar Cliente", command=crear_grupo, bg="#4caf50", fg="white", font=("Roboto", 11), relief="flat", width=20, height=2).pack(pady=10)
-tk.Button(frame_superior_izq, text="Imprimir Ticket", command=imprimir_ticket, bg="#4caf50", fg="white", font=("Roboto", 11), relief="flat", width=20, height=2).pack(pady=5)
-tk.Button(frame_superior_izq, text="Limpiar Pedido", command=limpiar_pedido, bg="#d32f2f", fg="white", font=("Roboto", 11), relief="flat", width=20, height=2).pack(pady=5)
+tk.Button(frame_superior_izq, text="Agregar Cliente", command=crear_grupo, bg="#4caf50", fg="white", font=("Roboto", 11), relief="flat", width=20, height=2).pack(pady=10, fill="x")
+tk.Button(frame_superior_izq, text="Imprimir Ticket", command=imprimir_ticket, bg="#4caf50", fg="white", font=("Roboto", 11), relief="flat", width=20, height=2).pack(pady=5, fill="x")
+tk.Button(frame_superior_izq, text="Limpiar Pedido", command=limpiar_pedido, bg="#d32f2f", fg="white", font=("Roboto", 11), relief="flat", width=20, height=2).pack(pady=5, fill="x")
 
 panel_derecho = tk.Frame(frame_principal, bg="#ffffff", bd=1, relief="flat")
 panel_derecho.pack(side="right", fill="both", expand=True, padx=15, pady=15)
 
-tk.Label(panel_derecho, text="Resumen del Pedido:", font=("Roboto", 18, "bold"), bg="#ffffff", fg="#d32f2f").pack(anchor="nw", pady=15)
+tk.Label(panel_derecho, text="Resumen del Pedido:", font=("Roboto", 18, "bold"), bg="#ffffff", fg="#d32f2f").pack(anchor="nw", pady=15, fill="x")
 frame_resumen = tk.Frame(panel_derecho, bg="#ffffff")
 frame_resumen.pack(fill="both", expand=True, anchor="n", padx=15)
 
