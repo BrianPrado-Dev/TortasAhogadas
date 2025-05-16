@@ -25,15 +25,13 @@ Sistema operativo: Este programa está diseñado para Windows debido a la depend
 Impresora configurada: El programa imprime tickets usando la impresora predeterminada del sistema.
 
 Instrucciones de Uso
-
-Instalación:
+Instalación
 
 Descarga o clona el código fuente del programa.
 Asegúrate de tener Python y las bibliotecas requeridas instaladas (ver Requisitos).
 Coloca el archivo main.py en un directorio de tu elección.
 
-
-Ejecución:
+Ejecución
 
 Abre una terminal en el directorio donde está main.py.
 Ejecuta el programa con:python main.py
@@ -41,91 +39,85 @@ Ejecuta el programa con:python main.py
 
 Se abrirá una ventana gráfica con la interfaz del programa.
 
+Uso del Programa
+Datos del Cliente
 
-Uso del programa:
-
-Datos del cliente:
 Ingresa el número de teléfono. Si el cliente ya está registrado, los campos "Domicilio" y "Cruces de calle" se autocompletarán.
 Si es un cliente nuevo, llena los campos manualmente. Estos datos se guardarán automáticamente al imprimir el ticket.
 
+Selección de Productos
 
-Selección de productos:
 Usa los botones en las secciones "Bebidas", "Comida" y "Paquetes" para agregar productos al pedido.
 Para aguas frescas, se abrirá una ventana para seleccionar el sabor (Jamaica o Horchata).
 Puedes agregar anotaciones a los productos (por ejemplo, "sin verdura").
 
+Gestión de Grupos
 
-Gestión de grupos:
 Usa el botón "Agregar Cliente" para crear un nuevo grupo (por ejemplo, "Ana"). Los productos se asociarán al grupo actual.
 
+Impresión de Tickets
 
-Impresión de tickets:
 Una vez completado el pedido, presiona "Imprimir Ticket" para generar e imprimir el ticket.
 
+Resumen del Día
 
-Resumen del día:
 Usa el botón "Resumen del Día" para ver todos los pedidos del día. Necesitarás una contraseña (predeterminada: "123").
 
+Lista de Pedidos
 
-Lista de pedidos:
 Usa el botón "Lista de Pedidos" para ver e imprimir tickets individuales del día.
 
+Cambiar Contraseña
 
-Cambiar contraseña:
 Usa el botón "Cambiar Contraseña" en el pie de página para actualizar la contraseña administrativa.
 
-
-
-
-Base de datos:
+Base de Datos
 
 El programa crea automáticamente un archivo clientes.db para almacenar datos de clientes.
 Los datos se actualizan cada vez que imprimes un ticket.
 
-
-
 Estructura del Código
+Imports y Configuración Inicial
 
-Imports y configuración inicial:
 Se importan las bibliotecas necesarias (tkinter, sqlite3, pywin32, etc.).
 Se define el diccionario menu_productos con los precios.
 
+Base de Datos
 
-Base de datos:
 inicializar_base_datos(): Crea la base de datos SQLite y la tabla clientes.
 buscar_cliente(): Busca un cliente por teléfono y autocompleta los campos.
 guardar_actualizar_cliente(): Guarda o actualiza un cliente en la base de datos.
 
+Funciones Principales
 
-Funciones principales:
 agregar_producto(): Maneja la adición de productos al pedido.
 actualizar_ticket(): Actualiza el resumen del pedido en la interfaz.
 imprimir_ticket(): Genera e imprime el ticket, y guarda el cliente en la base de datos.
 mostrar_resumen_dia(): Genera el resumen diario.
 mostrar_lista_pedidos(): Muestra todos los tickets del día.
 
+Interfaz Gráfica
 
-Interfaz gráfica:
 La interfaz se construye con Tkinter, dividida en paneles para datos del cliente, selección de productos, resumen del pedido y opciones administrativas.
-
-
 
 Imágenes del Programa
 A continuación, se muestran capturas de pantalla del programa en acción.
-Interfaz principal:![Interfaz principal](./imagenes/interfaz_principal.png)
 
-Selección de sabor para agua fresca:![Agua Fresca](./imagenes/sabor_agua.png)
+Interfaz Principal  
 
-Resumen del pedido con grupos:![Grupos](./imagenes/resumen_pedido.png)
+Selección de Sabor para Agua Fresca  
 
-Resumen del día:![Resumen Del Dia](./imagenes/resumen_dia.png)
+Resumen del Pedido con Grupos  
 
-Lista de pedidos:![Lista de Pedidos](./imagenes/lista_pedidos.png)
+Resumen del Día  
 
-Limitaciones:
+Lista de Pedidos
+
+
+Limitaciones
+
 La impresión está limitada a sistemas Windows debido a la dependencia de pywin32.
 La base de datos no incluye una interfaz para eliminar o editar clientes directamente; los datos se actualizan al imprimir tickets.
 
-
-Desarrollado por: BrianP
-Fecha: Mayo de 2025
+Desarrollado por
+BrianPFecha: Mayo de 2025
