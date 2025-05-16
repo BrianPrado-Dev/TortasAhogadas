@@ -6,6 +6,7 @@ import win32print
 import win32ui
 from win32con import *
 import copy
+import sqlite3
 
 # Diccionario de productos
 menu_productos = {
@@ -26,6 +27,44 @@ grupos = []
 grupo_actual = None
 ventana_sabores = None
 hora_especifica = None
+
+def inicializar_base_datos():
+    conn = sqlite3.connect("clientes.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS clientes (
+            telefono TEXT PRIMARY KEY,
+            domicilio TEXT,
+            cruces TEXT
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+def buscar_cliente(telefono):
+    conn = sqlite3.connect("clientes.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT domicilio, cruces FROM clientes WHERE telefono = ?", (telefono,))
+    resultado = cursor.fetchone()
+    conn.close()
+    if resultado:
+        entry_domicilio.delete(0, tk.END)
+        entry_domicilio.insert(0, resultado[0])
+        entry_cruces.delete(0, tk.END)
+        entry_cruces.insert(0, resultado[1])
+    else:
+        entry_domicilio.delete(0, tk.END)
+        entry_cruces.delete(0, tk.END)
+
+def guardar_actualizar_cliente(telefono, domicilio, cruces):
+    conn = sqlite3.connect("clientes.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT OR REPLACE INTO clientes (telefono, domicilio, cruces)
+        VALUES (?, ?, ?)
+    """, (telefono, domicilio, cruces))
+    conn.commit()
+    conn.close()
 
 def centrar(texto, ancho=32):
     return texto.center(ancho)
@@ -349,6 +388,9 @@ def imprimir_ticket():
 
     items_copy = copy.deepcopy(pedido_actual)
 
+    # Guardar o actualizar cliente en la base de datos
+    guardar_actualizar_cliente(telefono, domicilio, cruces)
+
     guardar_en_historial(fecha_hora, domicilio, total)
 
     ticket = imprimir_ticket_personalizado(fecha_hora, domicilio, telefono, cruces, total, items_copy)
@@ -608,6 +650,9 @@ def toggle_hora_entry():
         entry_hora.delete(0, tk.END)
         hora_especifica = None
 
+# Inicializar la base de datos al inicio
+inicializar_base_datos()
+
 ventana = tk.Tk()
 ventana.title("Tortas Ahogadas Doña Susy")
 screen_width = ventana.winfo_screenwidth()
@@ -645,6 +690,8 @@ for texto, entry_name in [("Domicilio:", "entry_domicilio"), ("Teléfono:", "ent
     tk.Label(frame_entrada, text=texto, bg="#faf2d3", font=("Roboto", 11), fg="#3e2723").pack(side="left")
     globals()[entry_name] = tk.Entry(frame_entrada, width=50, font=("Roboto", 11), relief="flat", bg="#ffffff", bd=1)
     globals()[entry_name].pack(side="left", padx=10, fill="x", expand=True)
+    if entry_name == "entry_telefono":
+        entry_telefono.bind("<KeyRelease>", lambda event: buscar_cliente(entry_telefono.get()))
 
 frame_hora = tk.Frame(frame_datos, bg="#faf2d3")
 frame_hora.pack(fill="x", padx=15, pady=5)

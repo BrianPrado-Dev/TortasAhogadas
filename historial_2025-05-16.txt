@@ -48,3 +48,132 @@ Cliente: GENERAL
 Total: $205
 ===================================
 
+===== PEDIDO - 2025-05-16 00:42 =====
+Fecha y Hora: 2025-05-16 00:42
+Domicilio: Geranio 869
+Teléfono: 3331846553
+Cruces: Clavel y Nardo
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío ($15)
+  - Paquete 1 ($85)
+    Nota: (agua fresca Jamaica)
+
+Total: $100
+===================================
+
+===== PEDIDO - 2025-05-16 00:45 =====
+Fecha y Hora: 2025-05-16 00:45
+Domicilio: Calavera 777
+Teléfono: 3336844525
+Cruces: Pedro y Juan
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío ($15)
+  - Paquete 2 ($90)
+    Nota: (agua fresca Horchata)
+  - Refresco ($25)
+  - Agua Chica ($15)
+    Nota: Jamaica
+
+Total: $145
+===================================
+
+===== PEDIDO - 2025-05-16 00:46 =====
+Fecha y Hora: 2025-05-16 00:46
+Domicilio: Pedro
+Teléfono: 3336844525
+Cruces: Pedro y Juan
+--- Productos ---
+
+Total: $0
+===================================
+
+===== PEDIDO - 2025-05-16 00:47 =====
+Fecha y Hora: 2025-05-16 00:47
+Domicilio: prueba 345
+Teléfono: 333
+Cruces: prueba y error
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío ($15)
+  - Taco Dorado ($10)
+
+Total: $25
+===================================
+
+===== PEDIDO - 2025-05-16 00:48 =====
+Fecha y Hora: 2025-05-16 00:48
+Domicilio: Geranio 883
+Teléfono: 333
+Cruces: pedro y juan
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío ($15)
+  - Torta ($55)
+
+Total: $70
+===================================
+
+===== PEDIDO - 2025-05-16 00:48 =====
+Fecha y Hora: 2025-05-16 00:48
+Domicilio: prueba4
+Teléfono: 444
+Cruces: prueba44
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío ($15)
+  - Taco Dorado ($10)
+
+Total: $25
+===================================
+
+===== PEDIDO - 2025-05-16 00:49 =====
+Fecha y Hora: 2025-05-16 00:49
+Domicilio: prueba5
+Teléfono: 555
+Cruces: prueba 555
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío ($15)
+  - Agua Chica ($15)
+    Nota: Horchata
+
+Total: $30
+===================================
+
+===== PEDIDO - 2025-05-16 00:53 =====
+Fecha y Hora: 2025-05-16 00:53
+Domicilio: prueba3
+Teléfono: 333
+Cruces: prueba3
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío ($15)
+  - Paquete 2 ($90)
+    Nota: (agua fresca Horchata)
+
+Total: $105
+===================================
+
+===== PEDIDO - 2025-05-16 00:53 =====
+Fecha y Hora: 2025-05-16 00:53
+Domicilio: prueba3
+Teléfono: 333
+Cruces: prueba3
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío ($15)
+  - Refresco ($25)
+
+Total: $40
+===================================
+
