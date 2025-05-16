@@ -114,6 +114,7 @@ La interfaz se construye con Tkinter, dividida en paneles para datos del cliente
 
 ### Imágenes del Programa
 A continuación, se muestran capturas de pantalla del programa en acción.
+
 Interfaz principal:![Interfaz principal](./imagenes/interfaz_principal.png)
 
 Selección de sabor para agua fresca:
