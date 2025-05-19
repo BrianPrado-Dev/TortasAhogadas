@@ -1,0 +1,107 @@
+===== PEDIDO - 2025-05-18 17:37 =====
+Fecha y Hora: 2025-05-18 17:37
+Domicilio: geranio 869
+Teléfono: 222
+Cruces: clavel y nardo
+Hora Específica: 9:45
+--- Productos ---
+
+Cliente: JUAN
+  - Refresco ($25.00)
+  - Torta ($55.00)
+
+Cliente: PEDRO
+  - Paquete 1 ($85.00)
+    Nota: Torta Buche y taco
+          frijol y requeson sin
+          cebolla(agua fresca Jamaica)
+
+Cliente: GENERAL
+  - Envío ($15.00)
+
+Total: $180.00
+===================================
+
+===== PEDIDO - 2025-05-18 17:42 =====
+Fecha y Hora: 2025-05-18 17:42
+Domicilio: prueba
+Teléfono: 111
+Cruces: 11
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío ($15.00)
+  - Torta ($55.00)
+
+Total: $70.00
+===================================
+
+===== PEDIDO - 2025-05-18 17:43 =====
+Fecha y Hora: 2025-05-18 17:43
+Domicilio: prueba
+Teléfono: 111
+Cruces: 11
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío ($15.00)
+  - Taco Blandito ($25.00)
+
+Total: $40.00
+===================================
+
+===== PEDIDO - 2025-05-18 17:48 =====
+Fecha y Hora: 2025-05-18 17:48
+Domicilio: prueba
+Teléfono: 111
+Cruces: 11
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío ($15.00)
+  - Refresco ($25.00)
+
+Total: $40.00
+===================================
+
+===== PEDIDO - 2025-05-18 17:50 =====
+Fecha y Hora: 2025-05-18 17:50
+Domicilio: prueba
+Teléfono: 111
+Cruces: 11
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío ($15.00)
+  - Torta ($55.00)
+
+Total: $70.00
+===================================
+
+===== PEDIDO - 2025-05-18 18:05 =====
+Fecha y Hora: 2025-05-18 18:05
+Domicilio: Juan Barrera 994
+Teléfono: 222
+Cruces: clavel y nardo 
+Hora Específica: 9:45
+--- Productos ---
+
+Cliente: JUANH
+  - Paquete 1 ($85.00)
+    Nota: (agua fresca Jamaica)
+
+Cliente: MARIA
+  - Paquete 2 ($90.00)
+    Nota: Torta Buche y taco
+          frijol y requeson (agua fresca
+          Horchata)
+
+Cliente: PEDRO
+  - Paquete 4 ($320.00)
+
+Cliente: GENERAL
+  - Envío ($15.00)
+
+Total: $510.00
+===================================
+

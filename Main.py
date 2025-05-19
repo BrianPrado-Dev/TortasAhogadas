@@ -473,8 +473,8 @@ def imprimir_texto(texto, doc_name="Documento"):
 
         try:
             font = win32ui.CreateFont({
-                "name": "Courier New",
-                "height": 70,
+                "name": "Arial",
+                "height": 30,  # Aumentado de 20 a 30 para letra más grande
                 "weight": FW_NORMAL
             })
             hdc.SelectObject(font)
@@ -485,10 +485,10 @@ def imprimir_texto(texto, doc_name="Documento"):
             win32print.ClosePrinter(hprinter)
             return
 
-        y = 50
+        y = 20
         for line in texto.split('\n'):
-            hdc.TextOut(50, y, line.rstrip())
-            y += 110
+            hdc.TextOut(20, y, line.rstrip())  # Reducido de 50 a 20 para mover más a la izquierda
+            y += 30
 
         hdc.EndPage()
         hdc.EndDoc()
@@ -504,7 +504,8 @@ def imprimir_texto(texto, doc_name="Documento"):
 def imprimir_ticket_personalizado(fecha, domicilio, telefono, cruces, total, items):
     global hora_especifica
     ticket = f"""
-{centrar("TORTAS AHOGADAS DOÑA SUSY")}
+{centrar("TORTAS AHOGADAS")}
+{centrar("DOÑA SUSY")}
 {centrar("Geranio #869A")}
 {centrar("Col.Tulipanes CP:45647")}
 {centrar("33-3684-4525")}
