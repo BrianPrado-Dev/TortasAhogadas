@@ -147,26 +147,27 @@ def mostrar_ventana_sabores(nombre, callback=None):
 
     ventana_sabores = tk.Toplevel(ventana)
     ventana_sabores.title("Seleccionar Sabor")
-    screen_width = ventana.winfo_screenwidth()
-    screen_height = ventana.winfo_screenheight()
-    ventana_sabores.geometry(f"{int(screen_width*0.25)}x{int(screen_height*0.2)}")
+    window_width = max(int(screen_width * 0.3), 300)
+    window_height = max(int(screen_height * 0.25), 200)
+    ventana_sabores.geometry(f"{window_width}x{window_height}")
     ventana_sabores.configure(bg="#faf2d3")
     ventana_sabores.resizable(True, True)
+    ventana_sabores.minsize(300, 200)
 
-    tk.Label(ventana_sabores, text=f"Selecciona el sabor para {nombre}", font=("Roboto", 12, "bold"), bg="#faf2d3", fg="#3e2723").pack(pady=15, fill="x")
+    tk.Label(ventana_sabores, text=f"Selecciona el sabor para {nombre}", font=("Roboto", 11, "bold"), bg="#faf2d3", fg="#3e2723").pack(pady=10, fill="x")
 
     frame_btn_sabores = tk.Frame(ventana_sabores, bg="#faf2d3")
-    frame_btn_sabores.pack(pady=10, fill="both", expand=True)
+    frame_btn_sabores.pack(pady=5, fill="both", expand=True)
 
-    btn_jamaica = tk.Button(frame_btn_sabores, text="Jamaica", width=12, height=2, font=("Roboto", 10), bg="#4caf50", fg="white", relief="flat",
+    btn_jamaica = tk.Button(frame_btn_sabores, text="Jamaica", font=("Roboto", 10), bg="#4caf50", fg="white", relief="flat",
                             activebackground="#388e3c", command=lambda: [callback("Jamaica") if callback else agregar_producto(nombre, "Jamaica"), ventana_sabores.destroy()])
-    btn_jamaica.pack(side="left", padx=10, expand=True)
+    btn_jamaica.pack(side="left", padx=10, pady=5, fill="x", expand=True)
     btn_jamaica.bind("<Enter>", lambda e: btn_jamaica.config(bg="#388e3c"))
     btn_jamaica.bind("<Leave>", lambda e: btn_jamaica.config(bg="#4caf50"))
 
-    btn_horchata = tk.Button(frame_btn_sabores, text="Horchata", width=12, height=2, font=("Roboto", 10), bg="#4caf50", fg="white", relief="flat",
+    btn_horchata = tk.Button(frame_btn_sabores, text="Horchata", font=("Roboto", 10), bg="#4caf50", fg="white", relief="flat",
                              activebackground="#388e3c", command=lambda: [callback("Horchata") if callback else agregar_producto(nombre, "Horchata"), ventana_sabores.destroy()])
-    btn_horchata.pack(side="left", padx=10, expand=True)
+    btn_horchata.pack(side="left", padx=10, pady=5, fill="x", expand=True)
     btn_horchata.bind("<Enter>", lambda e: btn_horchata.config(bg="#388e3c"))
     btn_horchata.bind("<Leave>", lambda e: btn_horchata.config(bg="#4caf50"))
 
@@ -243,9 +244,9 @@ def modificar_precio_item(nombre):
     nuevo_precio = simpledialog.askfloat("Modificar Precio", f"Ingrese el nuevo precio para {nombre}:", minvalue=0, parent=ventana)
     if nuevo_precio is not None:
         menu_productos[nombre] = nuevo_precio
-        guardar_precios()  # Guardar los precios actualizados en precios.json
+        guardar_precios()
         messagebox.showinfo("Éxito", f"El precio de {nombre} ha sido actualizado a ${nuevo_precio:.2f}.", parent=ventana)
-        mostrar_ventana_modificar_precio()  # Refrescar la ventana para mostrar el precio actualizado
+        mostrar_ventana_modificar_precio()
     else:
         messagebox.showwarning("Cancelado", "No se modificó el precio.", parent=ventana)
 
@@ -264,13 +265,14 @@ def mostrar_ventana_modificar_precio():
 
     ventana_precios = tk.Toplevel(ventana)
     ventana_precios.title("Modificar Precios del Menú")
-    screen_width = ventana.winfo_screenwidth()
-    screen_height = ventana.winfo_screenheight()
-    ventana_precios.geometry(f"{int(screen_width*0.4)}x{int(screen_height*0.5)}")
+    window_width = max(int(screen_width * 0.4), 400)
+    window_height = max(int(screen_height * 0.5), 400)
+    ventana_precios.geometry(f"{window_width}x{window_height}")
     ventana_precios.configure(bg="#faf2d3")
     ventana_precios.resizable(True, True)
+    ventana_precios.minsize(400, 400)
 
-    tk.Label(ventana_precios, text="Modificar Precios del Menú", font=("Roboto", 16, "bold"), bg="#faf2d3", fg="#d32f2f").pack(pady=10, fill="x")
+    tk.Label(ventana_precios, text="Modificar Precios del Menú", font=("Roboto", 14, "bold"), bg="#faf2d3", fg="#d32f2f").pack(pady=10, fill="x")
 
     canvas = tk.Canvas(ventana_precios, bg="#ffffff")
     scrollbar = tk.Scrollbar(ventana_precios, orient="vertical", command=canvas.yview)
@@ -283,7 +285,6 @@ def mostrar_ventana_modificar_precio():
     canvas.pack(side="left", fill="both", expand=True, padx=10, pady=10)
     scrollbar.pack(side="right", fill="y")
 
-    # Mostrar ítems del menú organizados por categoría
     categorias = {
         "Comida": ["Torta", "Taco Dorado", "Taco Blandito", "Taco con Carne"],
         "Bebidas": ["Refresco", "Agua Chica", "Agua Grande", "Caguama", "Cerveza"],
@@ -291,12 +292,12 @@ def mostrar_ventana_modificar_precio():
     }
 
     for categoria, items in categorias.items():
-        tk.Label(frame_menu, text=categoria, font=("Roboto", 12, "bold"), bg="#ffffff", fg="#3e2723").pack(anchor="w", pady=5, padx=10)
+        tk.Label(frame_menu, text=categoria, font=("Roboto", 11, "bold"), bg="#ffffff", fg="#3e2723").pack(anchor="w", pady=5, padx=10)
         for nombre in items:
-            if nombre in menu_productos:  # Excluir "Nuevo Ítem" implícitamente ya que no está en menu_productos
+            if nombre in menu_productos:
                 frame_item = tk.Frame(frame_menu, bg="#ffffff")
                 frame_item.pack(fill="x", pady=2, padx=20)
-                tk.Label(frame_item, text=f"{nombre}: ${menu_productos[nombre]:.2f}", font=("Roboto", 10), bg="#ffffff", fg="#3e2723", width=30, anchor="w").pack(side="left")
+                tk.Label(frame_item, text=f"{nombre}: ${menu_productos[nombre]:.2f}", font=("Roboto", 10), bg="#ffffff", fg="#3e2723", anchor="w").pack(side="left")
                 btn_modificar = tk.Button(frame_item, text="Modificar", font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
                                          activebackground="#ef6c00", command=lambda n=nombre: modificar_precio_item(n))
                 btn_modificar.pack(side="right", padx=5)
@@ -383,7 +384,7 @@ def actualizar_ticket():
     columna_actual.pack(fill="x", padx=15, anchor="n")
 
     if not pedido_actual:
-        tk.Label(columna_actual, text="(Sin productos aún)", font=("Roboto", 12, "italic"), fg="#6d4c41", bg="#ffffff").pack(pady=15)
+        tk.Label(columna_actual, text="(Sin productos aún)", font=("Roboto", 11, "italic"), fg="#6d4c41", bg="#ffffff").pack(pady=15)
     else:
         items_agrupados = {}
         for item in pedido_actual:
@@ -391,7 +392,7 @@ def actualizar_ticket():
             items_agrupados.setdefault(grupo, []).append(item)
 
         for grupo in sorted(items_agrupados.keys(), key=lambda x: (x == "General", x)):
-            tk.Label(columna_actual, text=f"Grupo: {grupo}", font=("Roboto", 14, "bold"), anchor="w", bg="#ffffff", fg="#3e2723").pack(anchor="w", pady=5)
+            tk.Label(columna_actual, text=f"Grupo: {grupo}", font=("Roboto", 12, "bold"), anchor="w", bg="#ffffff", fg="#3e2723").pack(anchor="w", pady=5)
 
             for item in items_agrupados[grupo]:
                 texto = f"{item['nombre']} (${item['precio']:.2f})"
@@ -401,7 +402,7 @@ def actualizar_ticket():
                 fila = tk.Frame(columna_actual, bg="#ffffff")
                 fila.pack(fill="x", pady=3)
 
-                tk.Label(fila, text=texto, anchor="w", justify="left", bg="#ffffff", font=("Roboto", 12), fg="#3e2723").pack(side="left", fill="x", expand=True)
+                tk.Label(fila, text=texto, anchor="w", justify="left", bg="#ffffff", font=("Roboto", 11), fg="#3e2723").pack(side="left", fill="x", expand=True)
                 idx = pedido_actual.index(item)
                 btn_eliminar = tk.Button(fila, text="X", fg="white", bg="#d32f2f", command=lambda idx=idx: eliminar_item(idx), width=3, relief="flat", font=("Roboto", 10))
                 btn_eliminar.pack(side="right")
@@ -412,8 +413,8 @@ def actualizar_ticket():
 
     frame_total = tk.Frame(frame_resumen, bg="#ffffff")
     frame_total.pack(pady=15, anchor="w")
-    tk.Label(frame_total, text="TOTAL:", font=("Roboto", 14, "bold"), bg="#ffffff", fg="#000000", pady=10, padx=5, relief="flat").pack(side="left")
-    tk.Label(frame_total, text=f"${total:.2f}", font=("Roboto", 14, "bold"), bg="#ffffff", fg="#d32f2f", pady=10, padx=5, relief="flat").pack(side="left")
+    tk.Label(frame_total, text="TOTAL:", font=("Roboto", 12, "bold"), bg="#ffffff", fg="#000000", pady=10, padx=5, relief="flat").pack(side="left")
+    tk.Label(frame_total, text=f"${total:.2f}", font=("Roboto", 12, "bold"), bg="#ffffff", fg="#d32f2f", pady=10, padx=5, relief="flat").pack(side="left")
 
 def eliminar_item(indice):
     del pedido_actual[indice]
@@ -474,7 +475,7 @@ def imprimir_texto(texto, doc_name="Documento"):
         try:
             font = win32ui.CreateFont({
                 "name": "Arial",
-                "height": 30,  # Aumentado de 20 a 30 para letra más grande
+                "height": 30,
                 "weight": FW_NORMAL
             })
             hdc.SelectObject(font)
@@ -487,7 +488,7 @@ def imprimir_texto(texto, doc_name="Documento"):
 
         y = 20
         for line in texto.split('\n'):
-            hdc.TextOut(20, y, line.rstrip())  # Reducido de 50 a 20 para mover más a la izquierda
+            hdc.TextOut(20, y, line.rstrip())
             y += 30
 
         hdc.EndPage()
@@ -553,7 +554,6 @@ def imprimir_ticket():
 
     items_copy = copy.deepcopy(pedido_actual)
 
-    # Guardar o actualizar cliente en la base de datos
     guardar_actualizar_cliente(telefono, domicilio, cruces)
 
     guardar_en_historial(fecha_hora, domicilio, total)
@@ -655,10 +655,11 @@ def mostrar_resumen_dia():
 
     ventana_resumen = tk.Toplevel(ventana)
     ventana_resumen.title("Resumen del Día")
-    screen_width = ventana.winfo_screenwidth()
-    screen_height = ventana.winfo_screenheight()
-    ventana_resumen.geometry(f"{int(screen_width*0.5)}x{int(screen_height*0.7)}")
+    window_width = max(int(screen_width * 0.5), 500)
+    window_height = max(int(screen_height * 0.7), 500)
+    ventana_resumen.geometry(f"{window_width}x{window_height}")
     ventana_resumen.configure(bg="#faf2d3")
+    ventana_resumen.minsize(500, 500)
 
     canvas = tk.Canvas(ventana_resumen, bg="#ffffff")
     scrollbar = tk.Scrollbar(ventana_resumen, orient="vertical", command=canvas.yview)
@@ -676,7 +677,7 @@ def mostrar_resumen_dia():
 
     tk.Label(marco, text=resumen, justify="left", font=("Courier New", 10), anchor="w", bg="#ffffff", fg="#3e2723").pack(side="left", fill="x", expand=True)
 
-    boton_imprimir = tk.Button(marco, text="Imprimir", bg="#4caf50", fg="white", width=10, height=2, relief="flat", font=("Roboto", 10), command=lambda: imprimir_texto(resumen, "Resumen del Día"))
+    boton_imprimir = tk.Button(marco, text="Imprimir", bg="#4caf50", fg="white", relief="flat", font=("Roboto", 10), command=lambda: imprimir_texto(resumen, "Resumen del Día"))
     boton_imprimir.pack(side="right", padx=10, pady=10)
     boton_imprimir.bind("<Enter>", lambda e: boton_imprimir.config(bg="#388e3c"))
     boton_imprimir.bind("<Leave>", lambda e: boton_imprimir.config(bg="#4caf50"))
@@ -691,10 +692,11 @@ def mostrar_lista_pedidos():
 
     ventana_lista = tk.Toplevel(ventana)
     ventana_lista.title("Lista de pedidos del día")
-    screen_width = ventana.winfo_screenwidth()
-    screen_height = ventana.winfo_screenheight()
-    ventana_lista.geometry(f"{int(screen_width*0.5)}x{int(screen_height*0.7)}")
+    window_width = max(int(screen_width * 0.5), 500)
+    window_height = max(int(screen_height * 0.7), 500)
+    ventana_lista.geometry(f"{window_width}x{window_height}")
     ventana_lista.configure(bg="#faf2d3")
+    ventana_lista.minsize(500, 500)
 
     canvas = tk.Canvas(ventana_lista, bg="#ffffff")
     scrollbar = tk.Scrollbar(ventana_lista, orient="vertical", command=canvas.yview)
@@ -762,7 +764,7 @@ def mostrar_lista_pedidos():
 
         tk.Label(marco, text=ticket, justify="left", font=("Courier New", 10), anchor="w", bg="#ffffff", fg="#3e2723").pack(side="left", fill="x", expand=True)
 
-        boton_imprimir = tk.Button(marco, text="Imprimir", bg="#4caf50", fg="white", width=10, height=2, relief="flat", font=("Roboto", 10), command=lambda t=ticket: imprimir_ticket_directo(t))
+        boton_imprimir = tk.Button(marco, text="Imprimir", bg="#4caf50", fg="white", relief="flat", font=("Roboto", 10), command=lambda t=ticket: imprimir_ticket_directo(t))
         boton_imprimir.pack(side="right", padx=10, pady=10)
         boton_imprimir.bind("<Enter>", lambda e: boton_imprimir.config(bg="#388e3c"))
         boton_imprimir.bind("<Leave>", lambda e: boton_imprimir.config(bg="#4caf50"))
@@ -822,50 +824,53 @@ ventana = tk.Tk()
 ventana.title("Tortas Ahogadas Doña Susy")
 screen_width = ventana.winfo_screenwidth()
 screen_height = ventana.winfo_screenheight()
-ventana.geometry(f"{int(screen_width*0.9)}x{int(screen_height*0.9)}")
+window_width = min(int(screen_width * 0.9), 1152)
+window_height = min(int(screen_height * 0.9), 648)
+ventana.geometry(f"{window_width}x{window_height}")
+ventana.minsize(1000, 600)
 ventana.configure(bg="#f5e8c7")
 ventana.resizable(True, True)
 
 frame_principal = tk.Frame(ventana, bg="#f5e8c7")
-frame_principal.pack(fill="both", expand=True, padx=20, pady=20)
+frame_principal.pack(fill="both", expand=True, padx=10, pady=10)
 
 panel_izquierdo = tk.Frame(frame_principal, bg="#ffffff", bd=1, relief="flat")
-panel_izquierdo.pack(side="left", fill="y", padx=15, pady=15, expand=True)
+panel_izquierdo.pack(side="left", fill="y", padx=5, pady=5, expand=True)
 
 frame_superior_izq = tk.Frame(panel_izquierdo, bg="#ffffff")
-frame_superior_izq.pack(fill="both", padx=15, pady=15, expand=True)
+frame_superior_izq.pack(fill="both", padx=5, pady=5, expand=True)
 
 tk.Label(
     frame_superior_izq,
     text="Tortas Ahogadas Doña Susy",
-    font=("Roboto", 28, "bold"),
+    font=("Roboto", 22, "bold"),
     bg="#ffffff",
     fg="#d32f2f",
-    pady=15
+    pady=5
 ).pack(anchor="w", fill="x")
 
 frame_datos = tk.Frame(frame_superior_izq, bg="#faf2d3", bd=1, relief="flat")
-frame_datos.pack(fill="x", padx=10, pady=10)
+frame_datos.pack(fill="x", padx=5, pady=5)
 
-tk.Label(frame_datos, text="Datos del Cliente", font=("Roboto", 14, "bold"), bg="#faf2d3", fg="#3e2723").pack(anchor="w", padx=15, pady=10)
+tk.Label(frame_datos, text="Datos del Cliente", font=("Roboto", 12, "bold"), bg="#faf2d3", fg="#3e2723").pack(anchor="w", padx=10, pady=5)
 
 for texto, entry_name in [("Domicilio:", "entry_domicilio"), ("Teléfono:", "entry_telefono"), ("Cruces de calle:", "entry_cruces")]:
     frame_entrada = tk.Frame(frame_datos, bg="#faf2d3")
-    frame_entrada.pack(fill="x", padx=15, pady=5)
-    tk.Label(frame_entrada, text=texto, bg="#faf2d3", font=("Roboto", 11), fg="#3e2723").pack(side="left")
-    globals()[entry_name] = tk.Entry(frame_entrada, width=50, font=("Roboto", 11), relief="flat", bg="#ffffff", bd=1)
-    globals()[entry_name].pack(side="left", padx=10, fill="x", expand=True)
+    frame_entrada.pack(fill="x", padx=10, pady=3)
+    tk.Label(frame_entrada, text=texto, bg="#faf2d3", font=("Roboto", 10), fg="#3e2723").pack(side="left")
+    globals()[entry_name] = tk.Entry(frame_entrada, font=("Roboto", 10), relief="flat", bg="#ffffff", bd=1)
+    globals()[entry_name].pack(side="left", padx=5, fill="x", expand=True)
     if entry_name == "entry_telefono":
         entry_telefono.bind("<KeyRelease>", lambda event: buscar_cliente(entry_telefono.get()))
 
 frame_hora = tk.Frame(frame_datos, bg="#faf2d3")
-frame_hora.pack(fill="x", padx=15, pady=5)
-tk.Label(frame_hora, text="Hora en específico:", bg="#faf2d3", font=("Roboto", 11), fg="#3e2723").pack(side="left")
+frame_hora.pack(fill="x", padx=10, pady=3)
+tk.Label(frame_hora, text="Hora en específico:", bg="#faf2d3", font=("Roboto", 10), fg="#3e2723").pack(side="left")
 var_hora = tk.IntVar(value=0)
-tk.Radiobutton(frame_hora, text="Sí", variable=var_hora, value=1, bg="#faf2d3", font=("Roboto", 10), fg="#3e2723", command=toggle_hora_entry).pack(side="left", padx=10)
-tk.Radiobutton(frame_hora, text="No", variable=var_hora, value=0, bg="#faf2d3", font=("Roboto", 10), fg="#3e2723", command=toggle_hora_entry).pack(side="left", padx=10)
-entry_hora = tk.Entry(frame_hora, width=20, font=("Roboto", 11), relief="flat", bg="#ffffff", bd=1, state="disabled")
-entry_hora.pack(side="left", padx=10, fill="x", expand=True)
+tk.Radiobutton(frame_hora, text="Sí", variable=var_hora, value=1, bg="#faf2d3", font=("Roboto", 10), fg="#3e2723", command=toggle_hora_entry).pack(side="left", padx=5)
+tk.Radiobutton(frame_hora, text="No", variable=var_hora, value=0, bg="#faf2d3", font=("Roboto", 10), fg="#3e2723", command=toggle_hora_entry).pack(side="left", padx=5)
+entry_hora = tk.Entry(frame_hora, font=("Roboto", 10), relief="flat", bg="#ffffff", bd=1, state="disabled")
+entry_hora.pack(side="left", padx=5, fill="x", expand=True)
 def actualizar_hora(event):
     global hora_especifica
     if var_hora.get() == 1:
@@ -874,94 +879,120 @@ def actualizar_hora(event):
         hora_especifica = None
 entry_hora.bind("<KeyRelease>", actualizar_hora)
 
-tk.Label(frame_superior_izq, text="\nSelecciona productos:", bg="#ffffff", font=("Roboto", 14, "bold"), fg="#3e2723").pack(pady=10, fill="x")
+tk.Label(frame_superior_izq, text="Selecciona productos:", bg="#ffffff", font=("Roboto", 12, "bold"), fg="#3e2723").pack(pady=5, fill="x")
 
+# Frame para los botones de productos (sin scrollbar)
 frame_botones = tk.Frame(frame_superior_izq, bg="#ffffff")
-frame_botones.pack(pady=15, fill="both", expand=True)
+frame_botones.pack(fill="both", expand=True, pady=5)
+
+frame_botones.grid_columnconfigure(0, weight=1)
+frame_botones.grid_columnconfigure(1, weight=1)
+frame_botones.grid_columnconfigure(2, weight=1)
+frame_botones.grid_columnconfigure(3, weight=1)
 
 bebidas = ["Refresco", "Agua Chica", "Agua Grande", "Caguama", "Cerveza"]
 comida = ["Torta", "Taco Dorado", "Taco Blandito", "Taco con Carne"]
 paquetes = ["Paquete 1", "Paquete 2", "Paquete 3", "Paquete 4", "Paquete 5"]
 
 frame_bebidas = tk.Frame(frame_botones, bg="#ffffff")
-frame_bebidas.pack(side="left", padx=15, fill="y")
-tk.Label(frame_bebidas, text="Bebidas", font=("Roboto", 12, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=8)
+frame_bebidas.grid(row=0, column=0, padx=3, sticky="nsew")
+tk.Label(frame_bebidas, text="Bebidas", font=("Roboto", 11, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=2)
 for nombre in bebidas:
-    btn = tk.Button(frame_bebidas, text=nombre, width=15, height=2, font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
+    btn = tk.Button(frame_bebidas, text=nombre, font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
                     activebackground="#ef6c00", command=lambda n=nombre: mostrar_ventana_sabores(n) if n in ["Agua Chica", "Agua Grande"] else agregar_producto(n))
-    btn.pack(pady=5, fill="x")
+    btn.pack(pady=1, fill="x", padx=2)
     btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#ef6c00"))
     btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#ff6f00"))
 
 frame_comida = tk.Frame(frame_botones, bg="#ffffff")
-frame_comida.pack(side="left", padx=15, fill="y")
-tk.Label(frame_comida, text="Comida", font=("Roboto", 12, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=8)
+frame_comida.grid(row=0, column=1, padx=3, sticky="nsew")
+tk.Label(frame_comida, text="Comida", font=("Roboto", 11, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=2)
 for nombre in comida:
-    btn = tk.Button(frame_comida, text=nombre, width=15, height=2, font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
+    btn = tk.Button(frame_comida, text=nombre, font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
                     activebackground="#ef6c00", command=lambda n=nombre: agregar_producto(n))
-    btn.pack(pady=5, fill="x")
+    btn.pack(pady=1, fill="x", padx=2)
     btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#ef6c00"))
     btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#ff6f00"))
 
-btn_kilo_carne = tk.Button(frame_comida, text="Kilo de Carne", width=15, height=2, font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
+btn_kilo_carne = tk.Button(frame_comida, text="Kilo de Carne", font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
                            activebackground="#ef6c00", command=agregar_kilo_carne)
-btn_kilo_carne.pack(pady=5, fill="x")
+btn_kilo_carne.pack(pady=1, fill="x", padx=2)
 btn_kilo_carne.bind("<Enter>", lambda e: btn_kilo_carne.config(bg="#ef6c00"))
 btn_kilo_carne.bind("<Leave>", lambda e: btn_kilo_carne.config(bg="#ff6f00"))
 
 frame_paquetes = tk.Frame(frame_botones, bg="#ffffff")
-frame_paquetes.pack(side="left", padx=15, fill="y")
-tk.Label(frame_paquetes, text="Paquetes", font=("Roboto", 12, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=8)
+frame_paquetes.grid(row=0, column=2, padx=3, sticky="nsew")
+tk.Label(frame_paquetes, text="Paquetes", font=("Roboto", 11, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=2)
 for nombre in paquetes:
-    btn = tk.Button(frame_paquetes, text=nombre, width=15, height=2, font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
+    btn = tk.Button(frame_paquetes, text=nombre, font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
                     activebackground="#ef6c00", command=lambda n=nombre: agregar_producto(n))
-    btn.pack(pady=5, fill="x")
+    btn.pack(pady=1, fill="x", padx=2)
     btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#ef6c00"))
     btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#ff6f00"))
 
 frame_nuevo_item = tk.Frame(frame_botones, bg="#ffffff")
-frame_nuevo_item.pack(side="left", padx=15, fill="y")
-tk.Label(frame_nuevo_item, text="Otros", font=("Roboto", 12, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=8)
-btn_nuevo_item = tk.Button(frame_nuevo_item, text="Nuevo Ítem", width=15, height=2, font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
+frame_nuevo_item.grid(row=0, column=3, padx=3, sticky="nsew")
+tk.Label(frame_nuevo_item, text="Otros", font=("Roboto", 11, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=2)
+btn_nuevo_item = tk.Button(frame_nuevo_item, text="Nuevo Ítem", font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
                            activebackground="#ef6c00", command=agregar_nuevo_item)
-btn_nuevo_item.pack(pady=5, fill="x")
+btn_nuevo_item.pack(pady=1, fill="x", padx=2)
 btn_nuevo_item.bind("<Enter>", lambda e: btn_nuevo_item.config(bg="#ef6c00"))
 btn_nuevo_item.bind("<Leave>", lambda e: btn_nuevo_item.config(bg="#ff6f00"))
 
-tk.Button(frame_superior_izq, text="Agregar Cliente", command=crear_grupo, bg="#4caf50", fg="white", font=("Roboto", 11), relief="flat", width=20, height=2).pack(pady=10, fill="x")
-tk.Button(frame_superior_izq, text="Imprimir Ticket", command=imprimir_ticket, bg="#4caf50", fg="white", font=("Roboto", 11), relief="flat", width=20, height=2).pack(pady=5, fill="x")
-tk.Button(frame_superior_izq, text="Limpiar Pedido", command=limpiar_pedido, bg="#d32f2f", fg="white", font=("Roboto", 11), relief="flat", width=20, height=2).pack(pady=5, fill="x")
+# Frame para botones de acción con Canvas y Scrollbar, con ancho reducido
+frame_acciones = tk.Frame(frame_superior_izq, bg="#ffffff")
+frame_acciones.pack(fill="x", pady=5)
+
+canvas_acciones = tk.Canvas(frame_acciones, bg="#ffffff", height=150, width=150)  # Reducir el ancho a 150
+scrollbar_acciones = tk.Scrollbar(frame_acciones, orient="vertical", command=canvas_acciones.yview)
+frame_botones_acciones = tk.Frame(canvas_acciones, bg="#ffffff")
+
+frame_botones_acciones.bind("<Configure>", lambda e: canvas_acciones.configure(scrollregion=canvas_acciones.bbox("all")))
+canvas_acciones.create_window((0, 0), window=frame_botones_acciones, anchor="nw")
+canvas_acciones.configure(yscrollcommand=scrollbar_acciones.set)
+
+canvas_acciones.pack(side="left")
+scrollbar_acciones.pack(side="right", fill="y")
+
+# Botones dispuestos verticalmente con ancho controlado
+btn_agregar_cliente = tk.Button(frame_botones_acciones, text="Agregar Cliente", command=crear_grupo, bg="#4caf50", fg="white", font=("Roboto", 10), relief="flat")
+btn_agregar_cliente.pack(side="top", padx=3, pady=2, fill="x")
+btn_imprimir_ticket = tk.Button(frame_botones_acciones, text="Imprimir Ticket", command=imprimir_ticket, bg="#4caf50", fg="white", font=("Roboto", 10), relief="flat")
+btn_imprimir_ticket.pack(side="top", padx=3, pady=2, fill="x")
+btn_limpiar_pedido = tk.Button(frame_botones_acciones, text="Limpiar Pedido", command=limpiar_pedido, bg="#d32f2f", fg="white", font=("Roboto", 10), relief="flat")
+btn_limpiar_pedido.pack(side="top", padx=3, pady=2, fill="x")
+btn_resumen = tk.Button(frame_botones_acciones, text="Resumen del Día", command=mostrar_resumen_dia, bg="#ff6f00", fg="white", font=("Roboto", 10), relief="flat")
+btn_resumen.pack(side="top", padx=3, pady=2, fill="x")
+btn_resumen.bind("<Enter>", lambda e: btn_resumen.config(bg="#ef6c00"))
+btn_resumen.bind("<Leave>", lambda e: btn_resumen.config(bg="#ff6f00"))
+btn_lista = tk.Button(frame_botones_acciones, text="Lista de Pedidos", command=mostrar_lista_pedidos, bg="#ff6f00", fg="white", font=("Roboto", 10), relief="flat")
+btn_lista.pack(side="top", padx=3, pady=2, fill="x")
+btn_lista.bind("<Enter>", lambda e: btn_lista.config(bg="#ef6c00"))
+btn_lista.bind("<Leave>", lambda e: btn_lista.config(bg="#ff6f00"))
 
 panel_derecho = tk.Frame(frame_principal, bg="#ffffff", bd=1, relief="flat")
-panel_derecho.pack(side="right", fill="both", expand=True, padx=15, pady=15)
+panel_derecho.pack(side="right", fill="both", expand=True, padx=5, pady=5)
 
-tk.Label(panel_derecho, text="Resumen del Pedido:", font=("Roboto", 18, "bold"), bg="#ffffff", fg="#d32f2f").pack(anchor="nw", pady=15, fill="x")
+tk.Label(panel_derecho, text="Resumen del Pedido:", font=("Roboto", 16, "bold"), bg="#ffffff", fg="#d32f2f").pack(anchor="nw", pady=5, fill="x")
 frame_resumen = tk.Frame(panel_derecho, bg="#ffffff")
-frame_resumen.pack(fill="both", expand=True, anchor="n", padx=15)
-
-boton_resumen = tk.Button(frame_principal, text="Resumen del Día", command=mostrar_resumen_dia, bg="#ff6f00", fg="white", font=("Roboto", 11), relief="flat", width=15, height=2)
-boton_resumen.pack(side="top", anchor="ne", pady=5, padx=15)
-boton_resumen.bind("<Enter>", lambda e: boton_resumen.config(bg="#ef6c00"))
-boton_resumen.bind("<Leave>", lambda e: boton_resumen.config(bg="#ff6f00"))
-
-boton_lista = tk.Button(frame_principal, text="Lista de Pedidos", command=mostrar_lista_pedidos, bg="#ff6f00", fg="white", font=("Roboto", 11), relief="flat", width=15, height=2)
-boton_lista.pack(side="top", anchor="ne", padx=15)
-boton_lista.bind("<Enter>", lambda e: boton_lista.config(bg="#ef6c00"))
-boton_lista.bind("<Leave>", lambda e: boton_lista.config(bg="#ff6f00"))
+frame_resumen.pack(fill="both", expand=True, anchor="n", padx=5)
 
 frame_footer = tk.Frame(ventana, bg="#ffd54f")
-frame_footer.pack(side="bottom", fill="x")
+frame_footer.pack(side="bottom", fill="x", pady=5)
 
 etiqueta_credito = tk.Label(frame_footer, text="Created by BrianP", font=("Roboto", 9, "italic"), bg="#ffd54f", fg="#3e2723")
-etiqueta_credito.pack(side="left", padx=15, pady=10)
+etiqueta_credito.pack(side="left", padx=10, pady=5)
 
-boton_modificar_precio = tk.Button(frame_footer, text="Modificar Precio", command=mostrar_ventana_modificar_precio, bg="#3e2723", fg="white", font=("Roboto", 9), relief="flat", height=2)
-boton_modificar_precio.pack(side="right", padx=5, pady=10)
+frame_footer_botones = tk.Frame(frame_footer, bg="#ffd54f")
+frame_footer_botones.pack(side="right", padx=5, pady=5)
+
+boton_modificar_precio = tk.Button(frame_footer_botones, text="Modificar Precio", command=mostrar_ventana_modificar_precio, bg="#3e2723", fg="white", font=("Roboto", 9), relief="flat")
+boton_modificar_precio.pack(side="right", padx=3, pady=2)
 boton_modificar_precio.bind("<Enter>", lambda e: boton_modificar_precio.config(bg="#2e1b17"))
 boton_modificar_precio.bind("<Leave>", lambda e: boton_modificar_precio.config(bg="#3e2723"))
 
-boton_cambiar_clave = tk.Button(frame_footer, text="Cambiar Contraseña", command=cambiar_contrasena, bg="#3e2723", fg="white", font=("Roboto", 9), relief="flat", height=2)
-boton_cambiar_clave.pack(side="right", padx=5, pady=10)
+boton_cambiar_clave = tk.Button(frame_footer_botones, text="Cambiar Contraseña", command=cambiar_contrasena, bg="#3e2723", fg="white", font=("Roboto", 9), relief="flat")
+boton_cambiar_clave.pack(side="right", padx=3, pady=2)
 boton_cambiar_clave.bind("<Enter>", lambda e: boton_cambiar_clave.config(bg="#2e1b17"))
 boton_cambiar_clave.bind("<Leave>", lambda e: boton_cambiar_clave.config(bg="#3e2723"))
 
