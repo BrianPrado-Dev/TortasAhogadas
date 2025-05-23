@@ -800,7 +800,7 @@ def mostrar_lista_pedidos():
         boton_imprimir.bind("<Leave>", lambda e: boton_imprimir.config(bg="#4caf50"))
 
 def limpiar_pedido():
-    global ventana_sabores, hora_especifica, grupo_actual
+    global ventana_sabores, hora_especifica, grupo_actual, grupos
     pedido_actual.clear()
     for widget in frame_resumen.winfo_children():
         widget.destroy()
@@ -814,6 +814,8 @@ def limpiar_pedido():
     if ventana_sabores:
         ventana_sabores.destroy()
         ventana_sabores = None
+    grupo_actual = "General"  # Restablecer grupo_actual a "General"
+    grupos = ["General"]      # Reiniciar la lista grupos con solo "General"
     actualizar_ticket()
 
 def cambiar_contrasena():
