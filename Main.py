@@ -240,6 +240,36 @@ def agregar_nuevo_item():
         pedido_actual.append(item)
         actualizar_ticket()
 
+def agregar_descuento():
+    global grupo_actual
+    if grupo_actual is None:
+        grupo_actual = "General"
+        if "General" not in grupos:
+            grupos.append("General")
+
+    if not any(item["nombre"] == "Envío" for item in pedido_actual):
+        pedido_actual.append({
+            "nombre": "Envío",
+            "anotacion": None,
+            "precio": 15,
+            "grupo": "General"
+        })
+
+    monto = simpledialog.askfloat("Descuento", "Ingresa el monto del descuento:", minvalue=0, parent=ventana)
+    if monto is None:
+        return
+
+    anotacion = simpledialog.askstring("Nota del Descuento", "Ingresa una nota para el descuento (opcional):", parent=ventana)
+
+    item = {
+        "nombre": f"Descuento",
+        "anotacion": anotacion,
+        "precio": -monto,  # Precio negativo para restar del total
+        "grupo": grupo_actual
+    }
+    pedido_actual.append(item)
+    actualizar_ticket()
+
 def modificar_precio_item(nombre):
     nuevo_precio = simpledialog.askfloat("Modificar Precio", f"Ingrese el nuevo precio para {nombre}:", minvalue=0, parent=ventana)
     if nuevo_precio is not None:
@@ -834,8 +864,12 @@ ventana.resizable(True, True)
 frame_principal = tk.Frame(ventana, bg="#f5e8c7")
 frame_principal.pack(fill="both", expand=True, padx=10, pady=10)
 
+# Marca de agua
+watermark = tk.Label(frame_principal, text="Created By BrianP", font=("Roboto", 8), fg="#757575", bg="#f5e8c7")
+watermark.place(relx=1.0, rely=1.0, anchor="se", x=-10, y=-10)
+
 panel_izquierdo = tk.Frame(frame_principal, bg="#ffffff", bd=1, relief="flat")
-panel_izquierdo.pack(side="left", fill="y", padx=5, pady=5, expand=True)
+panel_izquierdo.pack(side="left", fill="y", padx=5, pady=5)
 
 frame_superior_izq = tk.Frame(panel_izquierdo, bg="#ffffff")
 frame_superior_izq.pack(fill="both", padx=5, pady=5, expand=True)
@@ -939,36 +973,62 @@ btn_nuevo_item.pack(pady=1, fill="x", padx=2)
 btn_nuevo_item.bind("<Enter>", lambda e: btn_nuevo_item.config(bg="#ef6c00"))
 btn_nuevo_item.bind("<Leave>", lambda e: btn_nuevo_item.config(bg="#ff6f00"))
 
-# Frame para botones de acción con Canvas y Scrollbar, con ancho reducido
+btn_descuento = tk.Button(frame_nuevo_item, text="Descuento", font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
+                          activebackground="#ef6c00", command=agregar_descuento)
+btn_descuento.pack(pady=1, fill="x", padx=2)
+btn_descuento.bind("<Enter>", lambda e: btn_descuento.config(bg="#ef6c00"))
+btn_descuento.bind("<Leave>", lambda e: btn_descuento.config(bg="#ff6f00"))
+
+# Frame para botones de acción reorganizados en dos filas
 frame_acciones = tk.Frame(frame_superior_izq, bg="#ffffff")
 frame_acciones.pack(fill="x", pady=5)
 
-canvas_acciones = tk.Canvas(frame_acciones, bg="#ffffff", height=150, width=150)  # Reducir el ancho a 150
-scrollbar_acciones = tk.Scrollbar(frame_acciones, orient="vertical", command=canvas_acciones.yview)
-frame_botones_acciones = tk.Frame(canvas_acciones, bg="#ffffff")
+# Primera fila: Agregar Cliente, Imprimir Ticket, Limpiar Pedido
+frame_fila1 = tk.Frame(frame_acciones, bg="#ffffff")
+frame_fila1.pack(fill="x", pady=2)
 
-frame_botones_acciones.bind("<Configure>", lambda e: canvas_acciones.configure(scrollregion=canvas_acciones.bbox("all")))
-canvas_acciones.create_window((0, 0), window=frame_botones_acciones, anchor="nw")
-canvas_acciones.configure(yscrollcommand=scrollbar_acciones.set)
+btn_agregar_cliente = tk.Button(frame_fila1, text="Agregar Cliente", command=crear_grupo, bg="#4caf50", fg="white", font=("Roboto", 10), relief="flat")
+btn_agregar_cliente.pack(side="left", padx=3, pady=2, fill="x", expand=True)
+btn_agregar_cliente.bind("<Enter>", lambda e: btn_agregar_cliente.config(bg="#388e3c"))
+btn_agregar_cliente.bind("<Leave>", lambda e: btn_agregar_cliente.config(bg="#4caf50"))
 
-canvas_acciones.pack(side="left")
-scrollbar_acciones.pack(side="right", fill="y")
+btn_imprimir_ticket = tk.Button(frame_fila1, text="Imprimir Ticket", command=imprimir_ticket, bg="#4caf50", fg="white", font=("Roboto", 10), relief="flat")
+btn_imprimir_ticket.pack(side="left", padx=3, pady=2, fill="x", expand=True)
+btn_imprimir_ticket.bind("<Enter>", lambda e: btn_imprimir_ticket.config(bg="#388e3c"))
+btn_imprimir_ticket.bind("<Leave>", lambda e: btn_imprimir_ticket.config(bg="#4caf50"))
 
-# Botones dispuestos verticalmente con ancho controlado
-btn_agregar_cliente = tk.Button(frame_botones_acciones, text="Agregar Cliente", command=crear_grupo, bg="#4caf50", fg="white", font=("Roboto", 10), relief="flat")
-btn_agregar_cliente.pack(side="top", padx=3, pady=2, fill="x")
-btn_imprimir_ticket = tk.Button(frame_botones_acciones, text="Imprimir Ticket", command=imprimir_ticket, bg="#4caf50", fg="white", font=("Roboto", 10), relief="flat")
-btn_imprimir_ticket.pack(side="top", padx=3, pady=2, fill="x")
-btn_limpiar_pedido = tk.Button(frame_botones_acciones, text="Limpiar Pedido", command=limpiar_pedido, bg="#d32f2f", fg="white", font=("Roboto", 10), relief="flat")
-btn_limpiar_pedido.pack(side="top", padx=3, pady=2, fill="x")
-btn_resumen = tk.Button(frame_botones_acciones, text="Resumen del Día", command=mostrar_resumen_dia, bg="#ff6f00", fg="white", font=("Roboto", 10), relief="flat")
-btn_resumen.pack(side="top", padx=3, pady=2, fill="x")
-btn_resumen.bind("<Enter>", lambda e: btn_resumen.config(bg="#ef6c00"))
-btn_resumen.bind("<Leave>", lambda e: btn_resumen.config(bg="#ff6f00"))
-btn_lista = tk.Button(frame_botones_acciones, text="Lista de Pedidos", command=mostrar_lista_pedidos, bg="#ff6f00", fg="white", font=("Roboto", 10), relief="flat")
-btn_lista.pack(side="top", padx=3, pady=2, fill="x")
-btn_lista.bind("<Enter>", lambda e: btn_lista.config(bg="#ef6c00"))
-btn_lista.bind("<Leave>", lambda e: btn_lista.config(bg="#ff6f00"))
+btn_limpiar_pedido = tk.Button(frame_fila1, text="Limpiar Pedido", command=limpiar_pedido, bg="#d32f2f", fg="white", font=("Roboto", 10), relief="flat")
+btn_limpiar_pedido.pack(side="left", padx=3, pady=2, fill="x", expand=True)
+btn_limpiar_pedido.bind("<Enter>", lambda e: btn_limpiar_pedido.config(bg="#b71c1c"))
+btn_limpiar_pedido.bind("<Leave>", lambda e: btn_limpiar_pedido.config(bg="#d32f2f"))
+
+# Segunda fila: Resumen del Día, Lista de Pedidos (horizontal)
+frame_fila2 = tk.Frame(frame_acciones, bg="#ffffff")
+frame_fila2.pack(fill="x", pady=2)
+
+btn_resumen = tk.Button(frame_fila2, text="Resumen del Día", command=mostrar_resumen_dia, bg="#0288d1", fg="white", font=("Roboto", 10), relief="flat")
+btn_resumen.pack(side="left", padx=3, pady=2, fill="x", expand=True)
+btn_resumen.bind("<Enter>", lambda e: btn_resumen.config(bg="#01579b"))
+btn_resumen.bind("<Leave>", lambda e: btn_resumen.config(bg="#0288d1"))
+
+btn_lista = tk.Button(frame_fila2, text="Lista de Pedidos", command=mostrar_lista_pedidos, bg="#0288d1", fg="white", font=("Roboto", 10), relief="flat")
+btn_lista.pack(side="left", padx=3, pady=2, fill="x", expand=True)
+btn_lista.bind("<Enter>", lambda e: btn_lista.config(bg="#01579b"))
+btn_lista.bind("<Leave>", lambda e: btn_lista.config(bg="#0288d1"))
+
+# Nuevo frame para los botones "Modificar Precio" y "Cambiar Contraseña" en el lado izquierdo
+frame_footer_izq = tk.Frame(panel_izquierdo, bg="#ffd54f")
+frame_footer_izq.pack(side="bottom", fill="x", padx=5, pady=5)
+
+boton_modificar_precio = tk.Button(frame_footer_izq, text="Modificar Precio", command=mostrar_ventana_modificar_precio, bg="#3e2723", fg="white", font=("Roboto", 9), relief="flat")
+boton_modificar_precio.pack(side="top", padx=3, pady=2, fill="x")
+boton_modificar_precio.bind("<Enter>", lambda e: boton_modificar_precio.config(bg="#2e1b17"))
+boton_modificar_precio.bind("<Leave>", lambda e: boton_modificar_precio.config(bg="#3e2723"))
+
+boton_cambiar_clave = tk.Button(frame_footer_izq, text="Cambiar Contraseña", command=cambiar_contrasena, bg="#3e2723", fg="white", font=("Roboto", 9), relief="flat")
+boton_cambiar_clave.pack(side="top", padx=3, pady=2, fill="x")
+boton_cambiar_clave.bind("<Enter>", lambda e: boton_cambiar_clave.config(bg="#2e1b17"))
+boton_cambiar_clave.bind("<Leave>", lambda e: boton_cambiar_clave.config(bg="#3e2723"))
 
 panel_derecho = tk.Frame(frame_principal, bg="#ffffff", bd=1, relief="flat")
 panel_derecho.pack(side="right", fill="both", expand=True, padx=5, pady=5)
@@ -976,25 +1036,6 @@ panel_derecho.pack(side="right", fill="both", expand=True, padx=5, pady=5)
 tk.Label(panel_derecho, text="Resumen del Pedido:", font=("Roboto", 16, "bold"), bg="#ffffff", fg="#d32f2f").pack(anchor="nw", pady=5, fill="x")
 frame_resumen = tk.Frame(panel_derecho, bg="#ffffff")
 frame_resumen.pack(fill="both", expand=True, anchor="n", padx=5)
-
-frame_footer = tk.Frame(ventana, bg="#ffd54f")
-frame_footer.pack(side="bottom", fill="x", pady=5)
-
-etiqueta_credito = tk.Label(frame_footer, text="Created by BrianP", font=("Roboto", 9, "italic"), bg="#ffd54f", fg="#3e2723")
-etiqueta_credito.pack(side="left", padx=10, pady=5)
-
-frame_footer_botones = tk.Frame(frame_footer, bg="#ffd54f")
-frame_footer_botones.pack(side="right", padx=5, pady=5)
-
-boton_modificar_precio = tk.Button(frame_footer_botones, text="Modificar Precio", command=mostrar_ventana_modificar_precio, bg="#3e2723", fg="white", font=("Roboto", 9), relief="flat")
-boton_modificar_precio.pack(side="right", padx=3, pady=2)
-boton_modificar_precio.bind("<Enter>", lambda e: boton_modificar_precio.config(bg="#2e1b17"))
-boton_modificar_precio.bind("<Leave>", lambda e: boton_modificar_precio.config(bg="#3e2723"))
-
-boton_cambiar_clave = tk.Button(frame_footer_botones, text="Cambiar Contraseña", command=cambiar_contrasena, bg="#3e2723", fg="white", font=("Roboto", 9), relief="flat")
-boton_cambiar_clave.pack(side="right", padx=3, pady=2)
-boton_cambiar_clave.bind("<Enter>", lambda e: boton_cambiar_clave.config(bg="#2e1b17"))
-boton_cambiar_clave.bind("<Leave>", lambda e: boton_cambiar_clave.config(bg="#3e2723"))
 
 actualizar_ticket()
 ventana.mainloop()

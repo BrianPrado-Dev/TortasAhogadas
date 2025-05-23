@@ -1,0 +1,36 @@
+===== PEDIDO - 2025-05-22 22:12 =====
+Fecha y Hora: 2025-05-22 22:12
+Domicilio: prueba1
+Teléfono: 222
+Cruces: 111
+Hora Específica: 9:14
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío ($15.00)
+  - Paquete 2 ($85.00)
+  - Descuento ($-50.00)
+    Nota: hola
+
+Total: $50.00
+===================================
+
+===== PEDIDO - 2025-05-22 22:23 =====
+Fecha y Hora: 2025-05-22 22:23
+Domicilio: prueba1
+Teléfono: 222
+Cruces: 111
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío ($15.00)
+  - Paquete 2 ($90.00)
+    Nota: torta buche y taco
+          frijol y rqueson (agua fresca
+          Jamaica)
+  - Descuento ($-33.00)
+    Nota: cliente frecuente
+
+Total: $72.00
+===================================
+
