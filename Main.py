@@ -24,7 +24,8 @@ menu_productos_default = {
     "Taco con Carne": 25,
     "Paquete 3": 205,
     "Paquete 4": 320,
-    "Paquete 5": 630
+    "Paquete 5": 630,
+    "Torta Mini": 28
 }
 
 # Cargar precios desde precios.json o usar valores por defecto
@@ -37,6 +38,8 @@ def cargar_precios():
                 menu_productos = json.load(f)
         else:
             menu_productos = menu_productos_default.copy()
+        if "Torta Mini" not in menu_productos:
+            menu_productos["Torta Mini"] = 28
     except Exception as e:
         messagebox.showerror("Error", f"No se pudo cargar los precios: {str(e)}. Usando valores por defecto.")
         menu_productos = menu_productos_default.copy()
@@ -100,12 +103,46 @@ def guardar_actualizar_cliente(telefono, domicilio, cruces):
 def centrar(texto, ancho=32):
     return texto.center(ancho)
 
-def limitar(texto, ancho=32):
-    return texto[:ancho]
-
 def dividir_texto(texto, ancho_max=32, prefijo="Nota: "):
     if not texto:
         return ""
+    ancho_primera_linea = ancho_max - len(prefijo)
+    lineas = []
+    palabras = texto.split()
+    linea_actual = []
+    longitud_actual = 0
+
+    for i, palabra in enumerate(palabras):
+        if not lineas:
+            ancho = ancho_primera_linea
+        else:
+            ancho = ancho_max
+        espacio = 1 if linea_actual else 0
+        if longitud_actual + len(palabra) + espacio <= ancho:
+            linea_actual.append(palabra)
+            longitud_actual += len(palabra) + espacio
+        else:
+            if linea_actual:
+                if not lineas:
+                    lineas.append(f"{prefijo}{' '.join(linea_actual)}")
+                else:
+                    indentacion = " " * len(prefijo)
+                    lineas.append(f"{indentacion}{' '.join(linea_actual)}")
+            linea_actual = [palabra]
+            longitud_actual = len(palabra)
+
+    if linea_actual:
+        if not lineas:
+            lineas.append(f"{prefijo}{' '.join(linea_actual)}")
+        else:
+            indentacion = " " * len(prefijo)
+            lineas.append(f"{indentacion}{' '.join(linea_actual)}")
+
+    return "\n".join(lineas)
+
+def dividir_campo(texto, prefijo, ancho_max=32):
+    if not texto:
+        return prefijo
     ancho_primera_linea = ancho_max - len(prefijo)
     lineas = []
     palabras = texto.split()
@@ -173,7 +210,7 @@ def mostrar_ventana_sabores(nombre, callback=None):
 
     ventana_sabores.protocol("WM_DELETE_WINDOW", lambda: ventana_sabores.destroy())
 
-def agregar_kilo_carne():
+def agregar_carne_gramos():
     global grupo_actual
     if grupo_actual is None:
         grupo_actual = "General"
@@ -185,26 +222,73 @@ def agregar_kilo_carne():
             "nombre": "Envío",
             "anotacion": None,
             "precio": 15,
-            "grupo": "General"
+            "grupo": "General",
+            "cantidad": 1
         })
 
-    gramos = simpledialog.askfloat("Kilo de Carne", "Ingresa la cantidad en gramos:", minvalue=0, parent=ventana)
-    if gramos is None:
-        return
+    ventana_carne = tk.Toplevel(ventana)
+    ventana_carne.title("Carne(Gramos)")
+    ventana_carne.geometry("300x200")
+    ventana_carne.configure(bg="#faf2d3")
 
-    precio_kilo = 300
-    precio_final = (gramos / 1000) * precio_kilo
-    anotacion = simpledialog.askstring("Anotación", "Alguna nota para Kilo de Carne? (Ej. bien cocida)", parent=ventana)
+    tk.Label(ventana_carne, text="Gramos:", font=("Roboto", 10), bg="#faf2d3").pack(pady=5)
+    gramos_entry = tk.Entry(ventana_carne, font=("Roboto", 10))
+    gramos_entry.pack(pady=5)
 
-    if gramos is not None:
-        item = {
-            "nombre": f"Kilo de Carne ({gramos}g)",
-            "anotacion": anotacion,
-            "precio": round(precio_final, 2),
-            "grupo": grupo_actual
-        }
-        pedido_actual.append(item)
-        actualizar_ticket()
+    tk.Label(ventana_carne, text="O Monto ($):", font=("Roboto", 10), bg="#faf2d3").pack(pady=5)
+    dinero_entry = tk.Entry(ventana_carne, font=("Roboto", 10))
+    dinero_entry.pack(pady=5)
+
+    def confirmar():
+        try:
+            gramos_str = gramos_entry.get().strip()
+            dinero_str = dinero_entry.get().strip()
+            precio_kilo = 300
+            precio_por_gramo = 0.3
+
+            if not gramos_str and not dinero_str:
+                messagebox.showerror("Error", "Debe ingresar gramos o monto.", parent=ventana_carne)
+                return
+            if gramos_str and dinero_str:
+                messagebox.showerror("Error", "Ingrese solo un campo: gramos o monto.", parent=ventana_carne)
+                return
+
+            if gramos_str:
+                gramos = float(gramos_str)
+                if gramos <= 0:
+                    raise ValueError("Gramos debe ser positivo.")
+                precio_final = gramos * precio_por_gramo
+                gramos_final = gramos
+            else:
+                dinero = float(dinero_str)
+                if dinero <= 0:
+                    raise ValueError("Monto debe ser positivo.")
+                gramos_final = dinero / precio_por_gramo
+                precio_final = dinero
+
+            ventana_carne.destroy()
+            anotacion = simpledialog.askstring("Anotación", "Alguna nota para Carne(Gramos)? (Ej. bien cocida)", parent=ventana)
+            if anotacion:
+                anotacion = f"{gramos_final:.2f}g, {anotacion}"
+            else:
+                anotacion = f"{gramos_final:.2f}g"
+
+            item = {
+                "nombre": "Carne(Gramos)",
+                "anotacion": anotacion,
+                "precio": round(precio_final, 2),
+                "grupo": grupo_actual,
+                "cantidad": 1
+            }
+            pedido_actual.append(item)
+            actualizar_ticket()
+
+        except ValueError as e:
+            messagebox.showerror("Error", f"Entrada inválida: {e}", parent=ventana_carne)
+
+    tk.Button(ventana_carne, text="Confirmar", font=("Roboto", 10), bg="#4caf50", fg="white", command=confirmar).pack(pady=10)
+    ventana_carne.transient(ventana)
+    ventana_carne.grab_set()
 
 def agregar_nuevo_item():
     global grupo_actual
@@ -218,7 +302,8 @@ def agregar_nuevo_item():
             "nombre": "Envío",
             "anotacion": None,
             "precio": 15,
-            "grupo": "General"
+            "grupo": "General",
+            "cantidad": 1
         })
 
     nombre = simpledialog.askstring("Nuevo Ítem", "Ingresa el nombre del nuevo ítem:", parent=ventana)
@@ -235,7 +320,8 @@ def agregar_nuevo_item():
             "nombre": nombre,
             "anotacion": anotacion,
             "precio": precio,
-            "grupo": grupo_actual
+            "grupo": grupo_actual,
+            "cantidad": 1
         }
         pedido_actual.append(item)
         actualizar_ticket()
@@ -252,7 +338,8 @@ def agregar_descuento():
             "nombre": "Envío",
             "anotacion": None,
             "precio": 15,
-            "grupo": "General"
+            "grupo": "General",
+            "cantidad": 1
         })
 
     monto = simpledialog.askfloat("Descuento", "Ingresa el monto del descuento:", minvalue=0, parent=ventana)
@@ -264,8 +351,9 @@ def agregar_descuento():
     item = {
         "nombre": f"Descuento",
         "anotacion": anotacion,
-        "precio": -monto,  # Precio negativo para restar del total
-        "grupo": grupo_actual
+        "precio": -monto,
+        "grupo": grupo_actual,
+        "cantidad": 1
     }
     pedido_actual.append(item)
     actualizar_ticket()
@@ -316,7 +404,7 @@ def mostrar_ventana_modificar_precio():
     scrollbar.pack(side="right", fill="y")
 
     categorias = {
-        "Comida": ["Torta", "Taco Dorado", "Taco Blandito", "Taco con Carne"],
+        "Comida": ["Torta", "Taco Dorado", "Taco Blandito", "Taco con Carne", "Torta Mini"],
         "Bebidas": ["Refresco", "Agua Chica", "Agua Grande", "Caguama", "Cerveza"],
         "Paquetes": ["Paquete 1", "Paquete 2", "Paquete 3", "Paquete 4", "Paquete 5"]
     }
@@ -348,42 +436,71 @@ def agregar_producto(nombre, sabor_agua=None):
             "nombre": "Envío",
             "anotacion": None,
             "precio": 15,
-            "grupo": "General"
+            "grupo": "General",
+            "cantidad": 1
         })
 
     precio_base = menu_productos[nombre]
     anotacion = sabor_agua
 
-    if nombre not in ["Agua Chica", "Agua Grande"]:
-        anotacion = simpledialog.askstring("Anotación", f"¿Alguna nota para {nombre}? (Ej. sin verdura)", parent=ventana)
+    ventana_item = tk.Toplevel(ventana)
+    ventana_item.title(f"Agregar {nombre}")
+    ventana_item.geometry("300x200")
+    ventana_item.configure(bg="#faf2d3")
 
-    precio_final = precio_base
+    tk.Label(ventana_item, text="Cantidad:", font=("Roboto", 10), bg="#faf2d3").pack(pady=5)
+    cantidad_entry = tk.Entry(ventana_item, font=("Roboto", 10))
+    cantidad_entry.insert(0, "1")
+    cantidad_entry.pack(pady=5)
 
-    if nombre in ["Paquete 1", "Paquete 2"]:
-        agregar_agua = messagebox.askyesno("Agua fresca", "¿Agregar agua fresca (+$5)?", parent=ventana)
-        if agregar_agua:
-            precio_final += 5
-            grupo_temporal = grupo_actual
-            def agregar_sabor(sabor):
-                item = {
-                    "nombre": nombre,
-                    "anotacion": (anotacion or "") + f"(agua fresca {sabor})",
-                    "precio": precio_final,
-                    "grupo": grupo_temporal
-                }
-                pedido_actual.append(item)
-                actualizar_ticket()
-            mostrar_ventana_sabores("Agua Fresca", callback=agregar_sabor)
-            return
+    tk.Label(ventana_item, text="Nota:", font=("Roboto", 10), bg="#faf2d3").pack(pady=5)
+    nota_entry = tk.Entry(ventana_item, font=("Roboto", 10))
+    nota_entry.pack(pady=5)
 
-    item = {
-        "nombre": nombre,
-        "anotacion": anotacion,
-        "precio": precio_final,
-        "grupo": grupo_actual or "General"
-    }
-    pedido_actual.append(item)
-    actualizar_ticket()
+    def confirmar():
+        try:
+            cantidad = int(cantidad_entry.get())
+            if cantidad <= 0:
+                raise ValueError("Cantidad debe ser mayor a 0.")
+            anotacion = nota_entry.get() or sabor_agua
+            precio_final = precio_base * cantidad
+
+            if nombre in ["Paquete 1", "Paquete 2"]:
+                agregar_agua = messagebox.askyesno("Agua fresca", "¿Agregar agua fresca (+$5)?", parent=ventana_item)
+                if agregar_agua:
+                    precio_final += 5 * cantidad
+                    grupo_temporal = grupo_actual
+                    def agregar_sabor(sabor):
+                        item = {
+                            "nombre": nombre,
+                            "anotacion": (anotacion or "") + f" (agua fresca {sabor})",
+                            "precio": precio_final,
+                            "grupo": grupo_temporal,
+                            "cantidad": cantidad
+                        }
+                        pedido_actual.append(item)
+                        actualizar_ticket()
+                    ventana_item.destroy()
+                    mostrar_ventana_sabores("Agua Fresca", callback=agregar_sabor)
+                    return
+
+            item = {
+                "nombre": nombre,
+                "anotacion": anotacion,
+                "precio": precio_final,
+                "grupo": grupo_actual,
+                "cantidad": cantidad
+            }
+            pedido_actual.append(item)
+            ventana_item.destroy()
+            actualizar_ticket()
+
+        except ValueError as e:
+            messagebox.showerror("Error", f"Entrada inválida: {e}", parent=ventana_item)
+
+    tk.Button(ventana_item, text="Confirmar", font=("Roboto", 10), bg="#4caf50", fg="white", command=confirmar).pack(pady=10)
+    ventana_item.transient(ventana)
+    ventana_item.grab_set()
 
 def crear_grupo():
     global grupo_actual
@@ -424,8 +541,14 @@ def actualizar_ticket():
         for grupo in sorted(items_agrupados.keys(), key=lambda x: (x == "General", x)):
             tk.Label(columna_actual, text=f"Grupo: {grupo}", font=("Roboto", 12, "bold"), anchor="w", bg="#ffffff", fg="#3e2723").pack(anchor="w", pady=5)
 
+            tk.Label(columna_actual, text="Producto          | Cantidad | Precio", font=("Roboto", 11, "bold"), anchor="w", bg="#ffffff", fg="#3e2723").pack(anchor="w")
+            tk.Label(columna_actual, text="-" * 40, font=("Roboto", 11), anchor="w", bg="#ffffff", fg="#3e2723").pack(anchor="w")
+
             for item in items_agrupados[grupo]:
-                texto = f"{item['nombre']} (${item['precio']:.2f})"
+                producto = item["nombre"][:18].ljust(18)
+                cantidad = str(item["cantidad"]).center(8)
+                precio = f"${item['precio']:.2f}".rjust(10)
+                texto = f"{producto} | {cantidad} | {precio}"
                 if item["anotacion"]:
                     texto += f"\n{dividir_texto(item['anotacion'])}"
 
@@ -475,7 +598,7 @@ def guardar_en_historial(fecha_hora, domicilio, total):
         for grupo in sorted(items_agrupados.keys(), key=lambda x: (x == "General", x)):
             f.write(f"\nCliente: {grupo.upper()}\n")
             for item in items_agrupados[grupo]:
-                f.write(f"  - {item['nombre']} (${item['precio']:.2f})\n")
+                f.write(f"  - {item['nombre']} (x{item['cantidad']}) (${item['precio']:.2f})\n")
                 if item['anotacion']:
                     f.write(dividir_texto(item['anotacion'], 32, "    Nota: ") + "\n")
 
@@ -534,21 +657,21 @@ def imprimir_texto(texto, doc_name="Documento"):
 
 def imprimir_ticket_personalizado(fecha, domicilio, telefono, cruces, total, items):
     global hora_especifica
-    ticket = f"""
-{centrar("TORTAS AHOGADAS")}
-{centrar("DOÑA SUSY")}
-{centrar("Geranio #869A")}
-{centrar("Col.Tulipanes CP:45647")}
-{centrar("33-3684-4525")}
-{"=" * 32}
-Domicilio: {limitar(domicilio)}
-Teléfono: {limitar(telefono)}
-Cruces: {limitar(cruces)}
-Fecha: {fecha}
-"""
+    ticket = f"{centrar('TORTAS AHOGADAS')}\n"
+    ticket += f"{centrar('DOÑA SUSY')}\n"
+    ticket += f"{centrar('Geranio #869A')}\n"
+    ticket += f"{centrar('Col.Tulipanes CP:45647')}\n"
+    ticket += f"{centrar('33-3684-4525')}\n"
+    ticket += "=" * 32 + "\n"
+    ticket += dividir_campo(domicilio, "Domicilio: ") + "\n"
+    ticket += dividir_campo(telefono, "Teléfono: ") + "\n"
+    ticket += dividir_campo(cruces, "Cruces: ") + "\n"
+    ticket += f"Fecha: {fecha}\n"
     if hora_especifica:
         ticket += f"Hora específica: {hora_especifica}\n"
-    ticket += f"{"=" * 32}\n"
+    ticket += "=" * 32 + "\n"
+    ticket += "Prod          | Cant | Precio\n"
+    ticket += "-" * 32 + "\n"
 
     items_agrupados = {}
     for item in items:
@@ -556,17 +679,20 @@ Fecha: {fecha}
         items_agrupados.setdefault(grupo, []).append(item)
 
     for grupo in sorted(items_agrupados.keys(), key=lambda x: (x == "General", x)):
-        ticket += "-" * 32 
-        ticket += f"\nCliente= {grupo.upper()}\n"
+        ticket += f"Cliente: {grupo.upper()}\n"
         for item in items_agrupados[grupo]:
-            ticket += f"{item['nombre']} (${item['precio']:.2f})\n"
+            producto = item["nombre"][:14].ljust(14)
+            cantidad = str(item["cantidad"]).center(6)
+            precio = f"${item['precio']:.2f}".rjust(10)
+            ticket += f"{producto}|{cantidad}|{precio}\n"
             if item['anotacion']:
                 ticket += dividir_texto(item['anotacion']) + "\n"
+        ticket += "=================================\n"
 
-    ticket += f"{"=" * 32}\n"
+    ticket += "=" * 32 + "\n"
     ticket += f"{centrar(f'TOTAL: ${total:.2f}')}\n"
     ticket += f"{centrar('Gracias por su pedido')}\n"
-    ticket += f"{"=" * 32}\n"
+    ticket += "=" * 32
 
     return ticket
 
@@ -597,15 +723,15 @@ def imprimir_ticket_directo(ticket_texto):
 
 def imprimir_ticket_personalizado_2(fecha, domicilio, total, items):
     global hora_especifica
-    ticket = f"""
-{centrar("TORTAS AHOGADAS DOÑA SUSY")}
-{"=" * 32}
-Domicilio: {limitar(domicilio)}
-Fecha: {fecha}
-"""
+    ticket = f"{centrar('TORTAS AHOGADAS DOÑA SUSY')}\n"
+    ticket += "=" * 32 + "\n"
+    ticket += dividir_campo(domicilio, "Domicilio: ") + "\n"
+    ticket += f"Fecha: {fecha}\n"
     if hora_especifica:
         ticket += f"Hora específica: {hora_especifica}\n"
-    ticket += f"{"=" * 32}\n"
+    ticket += "=" * 32 + "\n"
+    ticket += "Prod          | Cant | Precio\n"
+    ticket += "-" * 32 + "\n"
 
     items_agrupados = {}
     for item in items:
@@ -613,16 +739,19 @@ Fecha: {fecha}
         items_agrupados.setdefault(grupo, []).append(item)
 
     for grupo in sorted(items_agrupados.keys(), key=lambda x: (x == "General", x)):
-        ticket += "-" * 32 + "\n"
-        ticket += f"\nCliente= {grupo.upper()}\n"
+        ticket += f"Cliente: {grupo.upper()}\n"
         for item in items_agrupados[grupo]:
-            ticket += f"{item['nombre']} (${item['precio']:.2f})\n"
+            producto = item["nombre"][:14].ljust(14)
+            cantidad = str(item["cantidad"]).center(6)
+            precio = f"${item['precio']:.2f}".rjust(10)
+            ticket += f"{producto}|{cantidad}|{precio}\n"
             if item['anotacion']:
                 ticket += dividir_texto(item['anotacion']) + "\n"
+        ticket += "=================================\n"
 
-    ticket += f"{"=" * 32}\n"
+    ticket += "=" * 32 + "\n"
     ticket += f"{centrar(f'TOTAL: ${total:.2f}')}\n"
-    ticket += f"{"=" * 32}\n"
+    ticket += "=" * 32
 
     return ticket
 
@@ -742,7 +871,7 @@ def mostrar_lista_pedidos():
     with open(archivo, "r", encoding="utf-8") as f:
         contenido = f.read().strip().split("===== PEDIDO - ")[1:]
 
-    for pedido in contenido:
+    for pedido in reversed(contenido):
         lineas = pedido.strip().split("\n")
         if not lineas:
             continue
@@ -776,9 +905,16 @@ def mostrar_lista_pedidos():
                     anotacion_actual = []
                 nombre_precio = linea.replace("  - ", "").strip()
                 try:
-                    nombre, precio = nombre_precio.split(" ($")
-                    precio = float(precio.replace(")", ""))
-                    items.append({"nombre": nombre, "precio": precio, "anotacion": None, "grupo": grupo_actual})
+                    if "(x" in nombre_precio:
+                        nombre, resto = nombre_precio.split(" (x")
+                        cantidad, precio = resto.split(") ($")
+                        precio = float(precio.replace(")", ""))
+                        cantidad = int(cantidad)
+                    else:
+                        nombre, precio = nombre_precio.split(" ($")
+                        precio = float(precio.replace(")", ""))
+                        cantidad = 1
+                    items.append({"nombre": nombre, "precio": precio, "anotacion": None, "grupo": grupo_actual, "cantidad": cantidad})
                 except ValueError:
                     continue
             elif linea.startswith("    Nota:") or linea.startswith("      "):
@@ -814,8 +950,8 @@ def limpiar_pedido():
     if ventana_sabores:
         ventana_sabores.destroy()
         ventana_sabores = None
-    grupo_actual = "General"  # Restablecer grupo_actual a "General"
-    grupos = ["General"]      # Reiniciar la lista grupos con solo "General"
+    grupo_actual = "General"
+    grupos = ["General"]
     actualizar_ticket()
 
 def cambiar_contrasena():
@@ -917,7 +1053,6 @@ entry_hora.bind("<KeyRelease>", actualizar_hora)
 
 tk.Label(frame_superior_izq, text="Selecciona productos:", bg="#ffffff", font=("Roboto", 12, "bold"), fg="#3e2723").pack(pady=5, fill="x")
 
-# Frame para los botones de productos (sin scrollbar)
 frame_botones = tk.Frame(frame_superior_izq, bg="#ffffff")
 frame_botones.pack(fill="both", expand=True, pady=5)
 
@@ -950,11 +1085,11 @@ for nombre in comida:
     btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#ef6c00"))
     btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#ff6f00"))
 
-btn_kilo_carne = tk.Button(frame_comida, text="Kilo de Carne", font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
-                           activebackground="#ef6c00", command=agregar_kilo_carne)
-btn_kilo_carne.pack(pady=1, fill="x", padx=2)
-btn_kilo_carne.bind("<Enter>", lambda e: btn_kilo_carne.config(bg="#ef6c00"))
-btn_kilo_carne.bind("<Leave>", lambda e: btn_kilo_carne.config(bg="#ff6f00"))
+btn_carne_gramos = tk.Button(frame_comida, text="Carne(Gramos)", font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
+                             activebackground="#ef6c00", command=agregar_carne_gramos)
+btn_carne_gramos.pack(pady=1, fill="x", padx=2)
+btn_carne_gramos.bind("<Enter>", lambda e: btn_carne_gramos.config(bg="#ef6c00"))
+btn_carne_gramos.bind("<Leave>", lambda e: btn_carne_gramos.config(bg="#ff6f00"))
 
 frame_paquetes = tk.Frame(frame_botones, bg="#ffffff")
 frame_paquetes.grid(row=0, column=2, padx=3, sticky="nsew")
@@ -981,11 +1116,15 @@ btn_descuento.pack(pady=1, fill="x", padx=2)
 btn_descuento.bind("<Enter>", lambda e: btn_descuento.config(bg="#ef6c00"))
 btn_descuento.bind("<Leave>", lambda e: btn_descuento.config(bg="#ff6f00"))
 
-# Frame para botones de acción reorganizados en dos filas
+btn_torta_mini = tk.Button(frame_nuevo_item, text="Torta Mini", font=("Roboto", 10), bg="#ff6f00", fg="white", relief="flat",
+                           activebackground="#ef6c00", command=lambda: agregar_producto("Torta Mini"))
+btn_torta_mini.pack(pady=1, fill="x", padx=2)
+btn_torta_mini.bind("<Enter>", lambda e: btn_torta_mini.config(bg="#ef6c00"))
+btn_torta_mini.bind("<Leave>", lambda e: btn_torta_mini.config(bg="#ff6f00"))
+
 frame_acciones = tk.Frame(frame_superior_izq, bg="#ffffff")
 frame_acciones.pack(fill="x", pady=5)
 
-# Primera fila: Agregar Cliente, Imprimir Ticket, Limpiar Pedido
 frame_fila1 = tk.Frame(frame_acciones, bg="#ffffff")
 frame_fila1.pack(fill="x", pady=2)
 
@@ -1004,7 +1143,6 @@ btn_limpiar_pedido.pack(side="left", padx=3, pady=2, fill="x", expand=True)
 btn_limpiar_pedido.bind("<Enter>", lambda e: btn_limpiar_pedido.config(bg="#b71c1c"))
 btn_limpiar_pedido.bind("<Leave>", lambda e: btn_limpiar_pedido.config(bg="#d32f2f"))
 
-# Segunda fila: Resumen del Día, Lista de Pedidos (horizontal)
 frame_fila2 = tk.Frame(frame_acciones, bg="#ffffff")
 frame_fila2.pack(fill="x", pady=2)
 
@@ -1018,7 +1156,6 @@ btn_lista.pack(side="left", padx=3, pady=2, fill="x", expand=True)
 btn_lista.bind("<Enter>", lambda e: btn_lista.config(bg="#01579b"))
 btn_lista.bind("<Leave>", lambda e: btn_lista.config(bg="#0288d1"))
 
-# Nuevo frame para los botones "Modificar Precio" y "Cambiar Contraseña" en el lado izquierdo
 frame_footer_izq = tk.Frame(panel_izquierdo, bg="#ffd54f")
 frame_footer_izq.pack(side="bottom", fill="x", padx=5, pady=5)
 
