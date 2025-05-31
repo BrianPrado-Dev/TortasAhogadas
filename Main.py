@@ -787,12 +787,10 @@ def mostrar_resumen_dia():
             ventana_resumen.destroy()
             mostrar_resumen_dia()
 
-    resumen = "-----------\n"
-    resumen += "Editor\n"
-    resumen += "-----------\n"
+    resumen = "=============================\n"
     resumen += "Resumen del Día\n"
-    resumen += "| Domicilio   |   Fecha   |  Total  |\n"
-    resumen += "----------\n"
+    resumen += "| Domi | Fecha | Total |\n"
+    resumen += "=============================\n"
 
     total_general = 0
     pedidos = []
@@ -844,21 +842,21 @@ def mostrar_resumen_dia():
                         continue
 
     for i, (domicilio, fecha, total) in enumerate(pedidos):
-        resumen += f"| {domicilio[:12].ljust(12)} | {fecha.ljust(10)} | ${total:.2f}".ljust(30) + "|\n"
+        resumen += f"| {domicilio[:8].ljust(8)} | {fecha.ljust(8)} | ${int(total)}".ljust(26) + "|\n"
         if i < len(pedidos) - 1:
-            resumen += "----------\n"
+            resumen += "----------------------------\n"
 
     if not pedidos:
         messagebox.showinfo("Sin datos", "Sin datos.")
         return
 
-    resumen += "----------\n"
-    resumen += "-----------\n"
+    resumen += "----------------------------\n"
+    resumen += "==============================\n"
     resumen += f"Refrescos vendidos: {cantidad_refrescos}\n"
     resumen += f"Aguas frescas vendidas: {cantidad_aguas_frescas}\n"
-    resumen += "-----------\n"
-    resumen += f"TOTAL GENERAL: ${total_general:.2f}\n"
-    resumen += "-----------\n"
+    resumen += "==============================\n"
+    resumen += f"TOTAL GENERAL: ${int(total_general)}\n"
+    resumen += "==============================\n"
 
     ventana_resumen = tk.Toplevel(ventana)
     ventana_resumen.title("Resumen del Día")
@@ -881,23 +879,23 @@ def mostrar_resumen_dia():
 
     tk.Label(frame_resumen, text="Resumen del Día", font=("Roboto", 14, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=5)
     tk.Label(frame_resumen, text="Editor", font=("Roboto", 12, "bold"), bg="#ffffff", fg="#3e2723").pack(pady=5)
-    tk.Label(frame_resumen, text="----------", font=("Courier New", 10), bg="#ffffff", fg="#3e2723").pack(fill="x", padx=15)
-    tk.Label(frame_resumen, text="| Domicilio   |   Fecha   |  Total  |", font=("Courier New", 10), bg="#ffffff", fg="#3e2723").pack(fill="x", padx=15)
-    tk.Label(frame_resumen, text="----------", font=("Courier New", 10), bg="#ffffff", fg="#3e2723").pack(fill="x", padx=15)
+    tk.Label(frame_resumen, text="--------------------------", font=("Courier New", 10), bg="#ffffff", fg="#3e2723").pack(fill="x", padx=15, pady=1)
+    tk.Label(frame_resumen, text="| Domi | Fecha | Total |", font=("Courier New", 10), bg="#ffffff", fg="#3e2723").pack(fill="x", padx=15, pady=1)
+    tk.Label(frame_resumen, text="--------------------------", font=("Courier New", 10), bg="#ffffff", fg="#3e2723").pack(fill="x", padx=15, pady=1)
 
     for i, (domicilio, fecha, total) in enumerate(pedidos):
         marco = tk.Frame(frame_resumen, bd=1, relief="flat", padx=10, pady=2, bg="#ffffff")
         marco.pack(fill="x", padx=15, pady=2)
-        texto_pedido = f"| {domicilio[:12].ljust(12)} | {fecha.ljust(10)} | ${total:.2f}".ljust(30) + "|"
+        texto_pedido = f"| {domicilio[:8].ljust(8)} | {fecha.ljust(8)} | ${int(total)}".ljust(26) + "|"
         tk.Label(marco, text=texto_pedido, justify="left", font=("Courier New", 10), anchor="w", bg="#ffffff", fg="#3e2723").pack(side="left", fill="x", expand=True)
         btn_eliminar = tk.Button(marco, text="X", fg="white", bg="#d32f2f", command=lambda idx=i: eliminar_pedido(idx), width=3, relief="flat", font=("Roboto", 10))
         btn_eliminar.pack(side="right")
         btn_eliminar.bind("<Enter>", lambda e: btn_eliminar.config(bg="#b71c1c"))
         btn_eliminar.bind("<Leave>", lambda e: btn_eliminar.config(bg="#d32f2f"))
         if i < len(pedidos) - 1:
-            tk.Label(frame_resumen, text="----------", font=("Courier New", 10), bg="#ffffff", fg="#3e2723").pack(fill="x", padx=15)
+            tk.Label(frame_resumen, text="----------------------------", font=("Courier New", 10), bg="#ffffff", fg="#3e2723").pack(fill="x", padx=15, pady=1)
 
-    tk.Label(frame_resumen, text="----------", font=("Courier New", 10), bg="#ffffff", fg="#3e2723").pack(fill="x", padx=15)
+    tk.Label(frame_resumen, text="----------------------------", font=("Courier New", 10), bg="#ffffff", fg="#3e2723").pack(fill="x", padx=15, pady=1)
 
     marco_total = tk.Frame(frame_resumen, bd=1, relief="flat", padx=10, pady=10, bg="#ffffff")
     marco_total.pack(fill="x", padx=15, pady=10)
