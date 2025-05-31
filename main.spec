@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['Main.py'],
+    ['C:\\Users\\erica\\Documents\\GitHub\\TortasAhogadas\\Main.py'],
     pathex=[],
     binaries=[],
-    datas=[('clave.txt', '.')],
+    datas=[],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -29,11 +29,11 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,
+    console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['icon_torta.ico'],
+    icon=['C:\\Users\\erica\\Documents\\GitHub\\TortasAhogadas\\icon_torta.ico'],
 )

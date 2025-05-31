@@ -775,12 +775,30 @@ def mostrar_resumen_dia():
         messagebox.showinfo("Sin historial", "Sin pedidos.")
         return
 
-    resumen = "===== RESUMEN DIA ====\n"
-    resumen += "Domicilio   |   Fecha   |  Total\n"
-    resumen += "----------- |---------- | ------ \n"
+    def eliminar_pedido(indice):
+        with open(archivo, "r", encoding="utf-8") as f:
+            contenido = f.read().strip().split("===== PEDIDO - ")[1:]
+        if 0 <= indice < len(contenido):
+            contenido.pop(indice)
+            with open(archivo, "w", encoding="utf-8") as f:
+                for i, pedido in enumerate(contenido, 1):
+                    f.write(f"===== PEDIDO - {pedido.split('\n')[0]} =====\n")
+                    f.write("\n".join(pedido.split("\n")[1:]) + "\n\n")
+            ventana_resumen.destroy()
+            mostrar_resumen_dia()
+
+    resumen = "-----------\n"
+    resumen += "Editor\n"
+    resumen += "-----------\n"
+    resumen += "Resumen del Día\n"
+    resumen += "| Domicilio   |   Fecha   |  Total  |\n"
+    resumen += "----------\n"
 
     total_general = 0
     pedidos = []
+    cantidad_refrescos = 0
+    cantidad_aguas_frescas = 0
+
     with open(archivo, "r", encoding="utf-8") as f:
         contenido = f.read().strip().split("===== PEDIDO - ")
         for pedido in contenido[1:]:
@@ -789,6 +807,8 @@ def mostrar_resumen_dia():
                 continue
             fecha_hora = lineas[0].strip()
             fecha = fecha_hora.split()[0]
+            domicilio = ""
+            total = 0
             for linea in lineas:
                 if linea.startswith("Domicilio:"):
                     domicilio = linea.replace("Domicilio:", "").strip()
@@ -800,17 +820,45 @@ def mostrar_resumen_dia():
                         pedidos.append((domicilio, fecha, total))
                     except ValueError:
                         continue
+                elif linea.startswith("  - "):
+                    nombre_item = linea.split("(x")[0].replace("  - ", "").strip()
+                    try:
+                        cantidad = int(linea.split("(x")[1].split(")")[0]) if "(x" in linea else 1
+                        precio_str = linea.split("($")[1].split(")")[0] if "($" in linea else "0"
+                        precio = float(precio_str)
+                        if nombre_item == "Refresco":
+                            cantidad_refrescos += cantidad
+                        elif nombre_item == "Paquete 1":
+                            if precio == 85.0:
+                                cantidad_aguas_frescas += cantidad
+                            else:
+                                cantidad_refrescos += cantidad
+                        elif nombre_item == "Paquete 2":
+                            if precio == 90.0:
+                                cantidad_aguas_frescas += cantidad
+                            else:
+                                cantidad_refrescos += cantidad
+                        elif nombre_item in ["Agua Chica", "Agua Grande"]:
+                            cantidad_aguas_frescas += cantidad
+                    except (IndexError, ValueError):
+                        continue
 
-    for domicilio, fecha, total in pedidos:
-        resumen += f"{domicilio[:12]} | {fecha} | ${total:.2f}\n"
+    for i, (domicilio, fecha, total) in enumerate(pedidos):
+        resumen += f"| {domicilio[:12].ljust(12)} | {fecha.ljust(10)} | ${total:.2f}".ljust(30) + "|\n"
+        if i < len(pedidos) - 1:
+            resumen += "----------\n"
 
     if not pedidos:
         messagebox.showinfo("Sin datos", "Sin datos.")
         return
 
-    resumen += "="*32 + "\n"
+    resumen += "----------\n"
+    resumen += "-----------\n"
+    resumen += f"Refrescos vendidos: {cantidad_refrescos}\n"
+    resumen += f"Aguas frescas vendidas: {cantidad_aguas_frescas}\n"
+    resumen += "-----------\n"
     resumen += f"TOTAL GENERAL: ${total_general:.2f}\n"
-    resumen += "="*32 + "\n"
+    resumen += "-----------\n"
 
     ventana_resumen = tk.Toplevel(ventana)
     ventana_resumen.title("Resumen del Día")
@@ -831,12 +879,81 @@ def mostrar_resumen_dia():
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar.pack(side="right", fill="y")
 
-    marco = tk.Frame(frame_resumen, bd=1, relief="flat", padx=10, pady=10, bg="#ffffff")
-    marco.pack(fill="x", padx=15, pady=10)
+    tk.Label(frame_resumen, text="Resumen del Día", font=("Roboto", 14, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=5)
+    tk.Label(frame_resumen, text="Editor", font=("Roboto", 12, "bold"), bg="#ffffff", fg="#3e2723").pack(pady=5)
+    tk.Label(frame_resumen, text="----------", font=("Courier New", 10), bg="#ffffff", fg="#3e2723").pack(fill="x", padx=15)
+    tk.Label(frame_resumen, text="| Domicilio   |   Fecha   |  Total  |", font=("Courier New", 10), bg="#ffffff", fg="#3e2723").pack(fill="x", padx=15)
+    tk.Label(frame_resumen, text="----------", font=("Courier New", 10), bg="#ffffff", fg="#3e2723").pack(fill="x", padx=15)
 
-    tk.Label(marco, text=resumen, justify="left", font=("Courier New", 10), anchor="w", bg="#ffffff", fg="#3e2723").pack(side="left", fill="x", expand=True)
+    for i, (domicilio, fecha, total) in enumerate(pedidos):
+        marco = tk.Frame(frame_resumen, bd=1, relief="flat", padx=10, pady=2, bg="#ffffff")
+        marco.pack(fill="x", padx=15, pady=2)
+        texto_pedido = f"| {domicilio[:12].ljust(12)} | {fecha.ljust(10)} | ${total:.2f}".ljust(30) + "|"
+        tk.Label(marco, text=texto_pedido, justify="left", font=("Courier New", 10), anchor="w", bg="#ffffff", fg="#3e2723").pack(side="left", fill="x", expand=True)
+        btn_eliminar = tk.Button(marco, text="X", fg="white", bg="#d32f2f", command=lambda idx=i: eliminar_pedido(idx), width=3, relief="flat", font=("Roboto", 10))
+        btn_eliminar.pack(side="right")
+        btn_eliminar.bind("<Enter>", lambda e: btn_eliminar.config(bg="#b71c1c"))
+        btn_eliminar.bind("<Leave>", lambda e: btn_eliminar.config(bg="#d32f2f"))
+        if i < len(pedidos) - 1:
+            tk.Label(frame_resumen, text="----------", font=("Courier New", 10), bg="#ffffff", fg="#3e2723").pack(fill="x", padx=15)
 
-    boton_imprimir = tk.Button(marco, text="Imprimir", bg="#4caf50", fg="white", relief="flat", font=("Roboto", 10), command=lambda: imprimir_texto(resumen, "Resumen del Día"))
+    tk.Label(frame_resumen, text="----------", font=("Courier New", 10), bg="#ffffff", fg="#3e2723").pack(fill="x", padx=15)
+
+    marco_total = tk.Frame(frame_resumen, bd=1, relief="flat", padx=10, pady=10, bg="#ffffff")
+    marco_total.pack(fill="x", padx=15, pady=10)
+    tk.Label(marco_total, text=resumen, justify="left", font=("Courier New", 10), anchor="w", bg="#ffffff", fg="#3e2723").pack(side="left", fill="x", expand=True)
+
+    def imprimir_resumen_ajustado():
+        try:
+            printer_name = win32print.GetDefaultPrinter()
+            if not printer_name:
+                messagebox.showerror("Error", "No se encontró una impresora predeterminada. Configura una en el sistema.")
+                return
+
+            hprinter = win32print.OpenPrinter(printer_name)
+            hdc = win32ui.CreateDC()
+            try:
+                hdc.CreatePrinterDC(printer_name)
+            except win32ui.error as e:
+                messagebox.showerror("Error", f"No se pudo crear el contexto de dispositivo: {str(e)}")
+                win32print.ClosePrinter(hprinter)
+                return
+
+            hdc.StartDoc("Resumen del Día")
+            hdc.StartPage()
+
+            try:
+                font = win32ui.CreateFont({
+                    "name": "Arial",
+                    "height": 30,
+                    "weight": FW_NORMAL
+                })
+                hdc.SelectObject(font)
+            except win32ui.error as e:
+                messagebox.showerror("Error", f"No se pudo seleccionar la fuente 'Arial': {str(e)}")
+                hdc.EndPage()
+                hdc.EndDoc()
+                win32print.ClosePrinter(hprinter)
+                return
+
+            y = 20
+            # Imprimir solo desde "Resumen del Día" hasta el final
+            lineas = resumen.split('\n')
+            start_index = lineas.index("Resumen del Día")
+            for line in lineas[start_index:]:
+                hdc.TextOut(10, y, line.rstrip())
+                y += 30
+
+            hdc.EndPage()
+            hdc.EndDoc()
+            win32print.ClosePrinter(hprinter)
+            messagebox.showinfo("Éxito", "Resumen del Día impreso correctamente.")
+        except win32print.error as e:
+            messagebox.showerror("Error", f"Error al acceder a la impresora: {str(e)}. Verifica que esté conectada y configurada.")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo imprimir: {str(e)}. Contacta al soporte con este mensaje.")
+
+    boton_imprimir = tk.Button(marco_total, text="Imprimir", bg="#4caf50", fg="white", relief="flat", font=("Roboto", 10), command=imprimir_resumen_ajustado)
     boton_imprimir.pack(side="right", padx=10, pady=10)
     boton_imprimir.bind("<Enter>", lambda e: boton_imprimir.config(bg="#388e3c"))
     boton_imprimir.bind("<Leave>", lambda e: boton_imprimir.config(bg="#4caf50"))
