@@ -1,100 +1,21 @@
-===== PEDIDO - 2025-06-08 17:56 =====
-Fecha y Hora: 2025-06-08 17:56
+===== PEDIDO - 2025-06-08 18:48 =====
+Fecha y Hora: 2025-06-08 18:48
 Domicilio: prueba1
 Teléfono: 222
 Cruces: 111
 --- Productos ---
 
-Cliente: GENERAL
-  - Envío (x1) ($15.00)
-  - Refresco (x1) ($25.00)
-    Nota: COCA
-  - Refresco (x1) ($25.00)
-    Nota: FANTA
-
-Total: $65.00
-===================================
-
-===== PEDIDO - 2025-06-08 18:06 =====
-Fecha y Hora: 2025-06-08 18:06
-Domicilio: prueba1
-Teléfono: 222
-Cruces: 111
---- Productos ---
-
-Cliente: GENERAL
-  - Envío (x1) ($15.00)
-  - Refresco (x1) ($25.00)
-    Nota: COCA
+Cliente: PEDROOO
   - Paquete 1 (x1) ($85.00)
-    Nota: agua fresca Jamaica
-  - Paquete 2 (x1) ($85.00)
-    Nota: COCA
-
-Total: $210.00
-===================================
-
-===== PEDIDO - 2025-06-08 18:11 =====
-Fecha y Hora: 2025-06-08 18:11
-Domicilio: prueba1
-Teléfono: 222
-Cruces: 111
---- Productos ---
-
-Cliente: GENERAL
-  - Envío (x1) ($15.00)
-  - Paquete 1 (x1) ($85.00)
-    Nota: agua fresca Horchata
-  - Agua Chica (x1) ($15.00)
-    Nota: Jamaica
-
-Total: $115.00
-===================================
-
-===== PEDIDO - 2025-06-08 18:14 =====
-Fecha y Hora: 2025-06-08 18:14
-Domicilio: prueba1
-Teléfono: 222
-Cruces: 111
---- Productos ---
-
-Cliente: GENERAL
-  - Envío (x1) ($15.00)
-  - Paquete 2 (x1) ($90.00)
-    Nota: agua fresca Jamaica
-  - Paquete 2 (x1) ($90.00)
     Nota: agua fresca Horchata,
-          Taco frijol y requeson y torta
-          buche
-
-Total: $195.00
-===================================
-
-===== PEDIDO - 2025-06-08 18:23 =====
-Fecha y Hora: 2025-06-08 18:23
-Domicilio: prueba1
-Teléfono: 222
-Cruces: 111
---- Productos ---
-
-Cliente: JUAN
-  - Paquete 2 (x1) ($90.00)
-    Nota: agua fresca Jamaica
-  - Taco Dorado (x4) ($40.00)
-
-Cliente: MARIA
-  - Paquete 2 (x1) ($90.00)
-    Nota: agua fresca Horchata
-
-Cliente: PEDRO
-  - Paquete 2 (x1) ($85.00)
-    Nota: COCA
-  - Refresco (x1) ($25.00)
-    Nota: MANZA
+          taco frijol y torta buche
 
 Cliente: GENERAL
   - Envío (x1) ($15.00)
+  - Paquete 2 (x1) ($85.00)
+    Nota: COCA, Torta Buche y
+          Tacos Frijol y requeson
 
-Total: $345.00
+Total: $185.00
 ===================================
 
