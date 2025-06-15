@@ -19,3 +19,26 @@ Cliente: GENERAL
 Total: $185.00
 ===================================
 
+===== PEDIDO - 2025-06-08 23:43 =====
+Fecha y Hora: 2025-06-08 23:43
+Domicilio: prueba1
+Teléfono: 222
+Cruces: 111
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Paquete 2 (x5) ($425.00)
+    Nota: COCA
+  - Paquete 1 (x1) ($80.00)
+    Nota: FANTA
+  - Refresco (x1) ($25.00)
+    Nota: FANTA
+  - Agua Chica (x1) ($15.00)
+    Nota: Jamaica
+  - Agua Grande (x1) ($25.00)
+    Nota: Jamaica
+
+Total: $585.00
+===================================
+

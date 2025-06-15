@@ -184,29 +184,46 @@ def mostrar_ventana_sabores(nombre, callback=None):
 
     ventana_sabores = tk.Toplevel(ventana)
     ventana_sabores.title("Seleccionar Sabor")
-    window_width = max(int(screen_width * 0.3), 300)
-    window_height = max(int(screen_height * 0.25), 200)
+    window_width = max(int(screen_width * 0.35), 400)  # Ventana un poco más ancha
+    window_height = max(int(screen_height * 0.35), 300)  # Ventana más alta para botones cuadrados
     ventana_sabores.geometry(f"{window_width}x{window_height}")
     ventana_sabores.configure(bg="#e6d2a1")
     ventana_sabores.resizable(True, True)
-    ventana_sabores.minsize(300, 200)
+    ventana_sabores.minsize(400, 300)
 
-    tk.Label(ventana_sabores, text=f"Selecciona el sabor para {nombre}", font=("Roboto", 11, "bold"), bg="#e6d2a1", fg="#3e2723").pack(pady=10, fill="x")
+    tk.Label(ventana_sabores, text=f"Selecciona el sabor para {nombre}", 
+             font=("Roboto", 14, "bold"), bg="#e6d2a1", fg="#3e2723").pack(pady=20, fill="x")
 
+    # Frame para organizar los botones lado a lado (horizontalmente)
     frame_btn_sabores = tk.Frame(ventana_sabores, bg="#e6d2a1")
-    frame_btn_sabores.pack(pady=5, fill="both", expand=True)
+    frame_btn_sabores.pack(pady=20, fill="both", expand=True, padx=30)
+    
+    # Configurar grid para 1x2 (horizontal) con botones cuadrados
+    frame_btn_sabores.grid_columnconfigure(0, weight=1)
+    frame_btn_sabores.grid_columnconfigure(1, weight=1)
+    frame_btn_sabores.grid_rowconfigure(0, weight=1)
 
-    btn_jamaica = tk.Button(frame_btn_sabores, text="Jamaica", font=("Roboto", 10), bg="#4caf50", fg="white", relief="flat",
-                            activebackground="#388e3c", command=lambda: [callback("Jamaica") if callback else agregar_producto(nombre, "Jamaica"), ventana_sabores.destroy()])
-    btn_jamaica.pack(side="left", padx=10, pady=5, fill="x", expand=True)
-    btn_jamaica.bind("<Enter>", lambda e: btn_jamaica.config(bg="#388e3c"))
-    btn_jamaica.bind("<Leave>", lambda e: btn_jamaica.config(bg="#4caf50"))
+    # Botón JAMAICA 
+    btn_jamaica = tk.Button(frame_btn_sabores, text="JAMAICA", font=("Roboto", 14, "bold"), 
+                            bg="#9c0000", fg="white", relief="flat", activebackground="#7a0000",
+                            command=lambda: [callback("Jamaica") if callback else agregar_producto(nombre, "Jamaica"), ventana_sabores.destroy()])
+    btn_jamaica.grid(row=0, column=0, padx=15, pady=15, sticky="nsew")
+    btn_jamaica.bind("<Enter>", lambda e: btn_jamaica.config(bg="#7a0000"))
+    btn_jamaica.bind("<Leave>", lambda e: btn_jamaica.config(bg="#9c0000"))
 
-    btn_horchata = tk.Button(frame_btn_sabores, text="Horchata", font=("Roboto", 10), bg="#4caf50", fg="white", relief="flat",
-                             activebackground="#388e3c", command=lambda: [callback("Horchata") if callback else agregar_producto(nombre, "Horchata"), ventana_sabores.destroy()])
-    btn_horchata.pack(side="left", padx=10, pady=5, fill="x", expand=True)
-    btn_horchata.bind("<Enter>", lambda e: btn_horchata.config(bg="#388e3c"))
-    btn_horchata.bind("<Leave>", lambda e: btn_horchata.config(bg="#4caf50"))
+    # Botón HORCHATA 
+    btn_horchata = tk.Button(frame_btn_sabores, text="HORCHATA", font=("Roboto", 14, "bold"), 
+                             bg="#ffffff", fg="black", relief="flat", activebackground="#a8a4a4",
+                             command=lambda: [callback("Horchata") if callback else agregar_producto(nombre, "Horchata"), ventana_sabores.destroy()])
+    btn_horchata.grid(row=0, column=1, padx=15, pady=15, sticky="nsew")
+    btn_horchata.bind("<Enter>", lambda e: btn_horchata.config(bg="#a8a4a4"))
+    btn_horchata.bind("<Leave>", lambda e: btn_horchata.config(bg="#ffffff"))
+
+    # Configurar para que los botones mantengan proporción cuadrada
+    # El sticky="nsew" hace que se expandan para llenar todo el espacio disponible
+    frame_btn_sabores.grid_rowconfigure(0, weight=1, minsize=120)
+    frame_btn_sabores.grid_columnconfigure(0, weight=1, minsize=120)
+    frame_btn_sabores.grid_columnconfigure(1, weight=1, minsize=120)
 
     ventana_sabores.protocol("WM_DELETE_WINDOW", lambda: ventana_sabores.destroy())
 
@@ -253,13 +270,13 @@ def mostrar_ventana_refrescos(nombre, callback=None):
     btn_fanta.bind("<Enter>", lambda e: btn_fanta.config(bg="#ef6c00"))
     btn_fanta.bind("<Leave>", lambda e: btn_fanta.config(bg="#ff6f00"))
 
-    # Botón MANZA (Café claro)
+    # Botón MANZA (Café MÁS CLARO - CAMBIO AQUÍ)
     btn_manza = tk.Button(frame_btn_refrescos, text="MANZA", font=("Roboto", 11, "bold"), 
-                          bg="#8d6e63", fg="white", relief="flat", activebackground="#6d4c41",
+                          bg="#9c4000", fg="white", relief="flat", activebackground="#8d6e63",
                           command=lambda: [callback("MANZA") if callback else agregar_producto(nombre, "MANZA"), ventana_sabores.destroy()])
     btn_manza.grid(row=1, column=0, padx=8, pady=8, sticky="nsew")
-    btn_manza.bind("<Enter>", lambda e: btn_manza.config(bg="#6d4c41"))
-    btn_manza.bind("<Leave>", lambda e: btn_manza.config(bg="#8d6e63"))
+    btn_manza.bind("<Enter>", lambda e: btn_manza.config(bg="#8d6e63"))
+    btn_manza.bind("<Leave>", lambda e: btn_manza.config(bg="#9c4000"))
 
     # Botón SPRITE (Verde)
     btn_sprite = tk.Button(frame_btn_refrescos, text="SPRITE", font=("Roboto", 11, "bold"), 
@@ -353,17 +370,17 @@ def agregar_producto_paquete_agua(nombre, sabor_agua):
 
     ventana_item = tk.Toplevel(ventana)
     ventana_item.title(f"Agregar {nombre}")
-    ventana_item.geometry("300x200")
+    ventana_item.geometry("400x280")  # CAMBIO: De 300x200 a 400x280
     ventana_item.configure(bg="#e6d2a1")
 
-    tk.Label(ventana_item, text="Cantidad:", font=("Roboto", 10), bg="#e6d2a1").pack(pady=5)
-    cantidad_entry = tk.Entry(ventana_item, font=("Roboto", 10))
+    tk.Label(ventana_item, text="Cantidad:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=8)
+    cantidad_entry = tk.Entry(ventana_item, font=("Roboto", 12), width=20)
     cantidad_entry.insert(0, "1")
-    cantidad_entry.pack(pady=5)
+    cantidad_entry.pack(pady=8)
 
-    tk.Label(ventana_item, text="Nota:", font=("Roboto", 10), bg="#e6d2a1").pack(pady=5)
-    nota_entry = tk.Entry(ventana_item, font=("Roboto", 10))
-    nota_entry.pack(pady=5)
+    tk.Label(ventana_item, text="Nota:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=8)
+    nota_entry = tk.Entry(ventana_item, font=("Roboto", 12), width=30)
+    nota_entry.pack(pady=8)
 
     def confirmar():
         try:
@@ -398,9 +415,11 @@ def agregar_producto_paquete_agua(nombre, sabor_agua):
         except ValueError as e:
             messagebox.showerror("Error", f"Entrada inválida: {e}", parent=ventana_item)
 
-    tk.Button(ventana_item, text="Confirmar", font=("Roboto", 10), bg="#4caf50", fg="white", command=confirmar).pack(pady=10)
+    tk.Button(ventana_item, text="Confirmar", font=("Roboto", 12), bg="#4caf50", fg="white", 
+              command=confirmar, width=15, pady=5).pack(pady=15)
     ventana_item.transient(ventana)
     ventana_item.grab_set()
+
 
 def agregar_carne_gramos():
     global grupo_actual
@@ -420,16 +439,16 @@ def agregar_carne_gramos():
 
     ventana_carne = tk.Toplevel(ventana)
     ventana_carne.title("Carne(Gramos)")
-    ventana_carne.geometry("300x200")
+    ventana_carne.geometry("400x280")  # CAMBIO: De 300x200 a 400x280
     ventana_carne.configure(bg="#e6d2a1")
 
-    tk.Label(ventana_carne, text="Gramos:", font=("Roboto", 10), bg="#e6d2a1").pack(pady=5)
-    gramos_entry = tk.Entry(ventana_carne, font=("Roboto", 10))
-    gramos_entry.pack(pady=5)
+    tk.Label(ventana_carne, text="Gramos:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=8)
+    gramos_entry = tk.Entry(ventana_carne, font=("Roboto", 12), width=20)
+    gramos_entry.pack(pady=8)
 
-    tk.Label(ventana_carne, text="O Monto ($):", font=("Roboto", 10), bg="#e6d2a1").pack(pady=5)
-    dinero_entry = tk.Entry(ventana_carne, font=("Roboto", 10))
-    dinero_entry.pack(pady=5)
+    tk.Label(ventana_carne, text="O Monto ($):", font=("Roboto", 12), bg="#e6d2a1").pack(pady=8)
+    dinero_entry = tk.Entry(ventana_carne, font=("Roboto", 12), width=20)
+    dinero_entry.pack(pady=8)
 
     def confirmar():
         try:
@@ -478,7 +497,8 @@ def agregar_carne_gramos():
         except ValueError as e:
             messagebox.showerror("Error", f"Entrada inválida: {e}", parent=ventana_carne)
 
-    tk.Button(ventana_carne, text="Confirmar", font=("Roboto", 10), bg="#4caf50", fg="white", command=confirmar).pack(pady=10)
+    tk.Button(ventana_carne, text="Confirmar", font=("Roboto", 12), bg="#4caf50", fg="white", 
+              command=confirmar, width=15, pady=5).pack(pady=15)
     ventana_carne.transient(ventana)
     ventana_carne.grab_set()
 
@@ -637,17 +657,17 @@ def agregar_producto(nombre, sabor=None):
 
     ventana_item = tk.Toplevel(ventana)
     ventana_item.title(f"Agregar {nombre}")
-    ventana_item.geometry("300x200")
+    ventana_item.geometry("400x280")  # CAMBIO: De 300x200 a 400x280
     ventana_item.configure(bg="#e6d2a1")
 
-    tk.Label(ventana_item, text="Cantidad:", font=("Roboto", 10), bg="#e6d2a1").pack(pady=5)
-    cantidad_entry = tk.Entry(ventana_item, font=("Roboto", 10))
+    tk.Label(ventana_item, text="Cantidad:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=8)
+    cantidad_entry = tk.Entry(ventana_item, font=("Roboto", 12), width=20)
     cantidad_entry.insert(0, "1")
-    cantidad_entry.pack(pady=5)
+    cantidad_entry.pack(pady=8)
 
-    tk.Label(ventana_item, text="Nota:", font=("Roboto", 10), bg="#e6d2a1").pack(pady=5)
-    nota_entry = tk.Entry(ventana_item, font=("Roboto", 10))
-    nota_entry.pack(pady=5)
+    tk.Label(ventana_item, text="Nota:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=8)
+    nota_entry = tk.Entry(ventana_item, font=("Roboto", 12), width=30)
+    nota_entry.pack(pady=8)
 
     def confirmar():
         try:
@@ -682,9 +702,11 @@ def agregar_producto(nombre, sabor=None):
         except ValueError as e:
             messagebox.showerror("Error", f"Entrada inválida: {e}", parent=ventana_item)
 
-    tk.Button(ventana_item, text="Confirmar", font=("Roboto", 10), bg="#4caf50", fg="white", command=confirmar).pack(pady=10)
+    tk.Button(ventana_item, text="Confirmar", font=("Roboto", 12), bg="#4caf50", fg="white", 
+              command=confirmar, width=15, pady=5).pack(pady=15)
     ventana_item.transient(ventana)
     ventana_item.grab_set()
+
 
 def crear_grupo():
     global grupo_actual
@@ -1256,62 +1278,63 @@ def mostrar_resumen_dia():
         tk.Label(aguas_frame, text="", bg="#e3f2fd").pack(pady=2)
 
     # Botón imprimir
-    def imprimir_resumen_moderno():
-        try:
-            printer_name = win32print.GetDefaultPrinter()
-            if not printer_name:
-                messagebox.showerror("Error", "No se encontró una impresora predeterminada.")
-                return
+def imprimir_resumen_moderno():
+    try:
+        printer_name = win32print.GetDefaultPrinter()
+        if not printer_name:
+            messagebox.showerror("Error", "No se encontró una impresora predeterminada.")
+            return
 
-            # Crear resumen para imprimir
-            resumen = "=============================\n"
-            resumen += "Resumen del Día\n"
+        # Crear resumen para imprimir
+        resumen = "=============================\n"
+        resumen += "Resumen del Día\n"
+        resumen += "=============================\n"
+        
+        # CAMBIO AQUÍ: Quitar la fecha, solo mostrar domicilio y total
+        for i, (domicilio, fecha, total) in enumerate(pedidos):
+            resumen += f"| {domicilio[:20].ljust(20)} | ${int(total)}\n"
+        
+        resumen += "=============================\n"
+        
+        if refrescos_detalle:
+            resumen += "REFRESCOS VENDIDOS:\n"
+            for tipo, cantidad in sorted(refrescos_detalle.items()):
+                resumen += f"  {tipo}: {cantidad}\n"
             resumen += "=============================\n"
-            
-            for i, (domicilio, fecha, total) in enumerate(pedidos):
-                resumen += f"| {domicilio[:15].ljust(15)} | {fecha.ljust(10)} | ${int(total)}\n"
-            
+        
+        if aguas_detalle:
+            resumen += "AGUAS FRESCAS VENDIDAS:\n"
+            for tipo, cantidad in sorted(aguas_detalle.items()):
+                resumen += f"  {tipo}: {cantidad}\n"
             resumen += "=============================\n"
-            
-            if refrescos_detalle:
-                resumen += "REFRESCOS VENDIDOS:\n"
-                for tipo, cantidad in sorted(refrescos_detalle.items()):
-                    resumen += f"  {tipo}: {cantidad}\n"
-                resumen += "=============================\n"
-            
-            if aguas_detalle:
-                resumen += "AGUAS FRESCAS VENDIDAS:\n"
-                for tipo, cantidad in sorted(aguas_detalle.items()):
-                    resumen += f"  {tipo}: {cantidad}\n"
-                resumen += "=============================\n"
-            
-            resumen += f"TOTAL GENERAL: ${int(total_general)}\n"
-            resumen += "=============================\n"
+        
+        resumen += f"TOTAL GENERAL: ${int(total_general)}\n"
+        resumen += "=============================\n"
 
-            hprinter = win32print.OpenPrinter(printer_name)
-            hdc = win32ui.CreateDC()
-            hdc.CreatePrinterDC(printer_name)
-            hdc.StartDoc("Resumen del Día")
-            hdc.StartPage()
+        hprinter = win32print.OpenPrinter(printer_name)
+        hdc = win32ui.CreateDC()
+        hdc.CreatePrinterDC(printer_name)
+        hdc.StartDoc("Resumen del Día")
+        hdc.StartPage()
 
-            font = win32ui.CreateFont({
-                "name": "Arial",
-                "height": 30,
-                "weight": FW_NORMAL
-            })
-            hdc.SelectObject(font)
+        font = win32ui.CreateFont({
+            "name": "Arial",
+            "height": 30,
+            "weight": FW_NORMAL
+        })
+        hdc.SelectObject(font)
 
-            y = 20
-            for line in resumen.split('\n'):
-                hdc.TextOut(10, y, line.rstrip())
-                y += 30
+        y = 20
+        for line in resumen.split('\n'):
+            hdc.TextOut(10, y, line.rstrip())
+            y += 30
 
-            hdc.EndPage()
-            hdc.EndDoc()
-            win32print.ClosePrinter(hprinter)
-            messagebox.showinfo("Éxito", "Resumen del Día impreso correctamente.")
-        except Exception as e:
-            messagebox.showerror("Error", f"No se pudo imprimir: {str(e)}")
+        hdc.EndPage()
+        hdc.EndDoc()
+        win32print.ClosePrinter(hprinter)
+        messagebox.showinfo("Éxito", "Resumen del Día impreso correctamente.")
+    except Exception as e:
+        messagebox.showerror("Error", f"No se pudo imprimir: {str(e)}")
 
     boton_imprimir = tk.Button(stats_content, text="🖨️ Imprimir Resumen", 
                               font=("Roboto", 11, "bold"), bg="#4caf50", fg="white", 
