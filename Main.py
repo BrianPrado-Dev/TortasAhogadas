@@ -62,6 +62,33 @@ grupo_actual = None
 ventana_sabores = None
 hora_especifica = None
 
+# Variables para el mensaje temporal
+label_datos_cliente = None
+mensaje_activo = False
+
+def mostrar_mensaje_temporal():
+    """Muestra el mensaje temporal por 5 segundos"""
+    global label_datos_cliente, mensaje_activo
+    if label_datos_cliente and not mensaje_activo:
+        mensaje_activo = True
+        label_datos_cliente.config(text="Datos del Cliente ( OJO agregar un número de teléfono real  >:/  )")
+        # Programar que se oculte después de 5 segundos
+        ventana.after(10000, ocultar_mensaje_temporal)
+
+def ocultar_mensaje_temporal():
+    """Oculta el mensaje temporal y programa que aparezca de nuevo en 30 segundos"""
+    global label_datos_cliente, mensaje_activo
+    if label_datos_cliente and mensaje_activo:
+        mensaje_activo = False
+        label_datos_cliente.config(text="Datos del Cliente")
+        # Programar que aparezca de nuevo después de 30 segundos
+        ventana.after(20000, mostrar_mensaje_temporal)
+
+def iniciar_ciclo_mensaje():
+    """Inicia el ciclo del mensaje temporal"""
+    # Esperar 2 segundos después de que se inicie el programa y luego mostrar el primer mensaje
+    ventana.after(2000, mostrar_mensaje_temporal)
+
 def inicializar_base_datos():
     conn = sqlite3.connect("clientes.db")
     cursor = conn.cursor()
@@ -1698,7 +1725,9 @@ tk.Label(
 frame_datos = tk.Frame(frame_superior_izq, bg="#faf2d3", bd=1, relief="flat")
 frame_datos.pack(fill="x", padx=5, pady=5)
 
-tk.Label(frame_datos, text="Datos del Cliente", font=("Roboto", 12, "bold"), bg="#faf2d3", fg="#3e2723").pack(anchor="w", padx=10, pady=5)
+# AQUÍ ESTÁ EL CAMBIO: Crear el label con la variable global para poder modificarlo
+label_datos_cliente = tk.Label(frame_datos, text="Datos del Cliente", font=("Roboto", 12, "bold"), bg="#faf2d3", fg="#3e2723")
+label_datos_cliente.pack(anchor="w", padx=10, pady=5)
 
 for texto, entry_name in [("Domicilio:", "entry_domicilio"), ("Teléfono:", "entry_telefono"), ("Cruces de calle:", "entry_cruces")]:
     frame_entrada = tk.Frame(frame_datos, bg="#faf2d3")
@@ -1853,6 +1882,9 @@ panel_derecho.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
 tk.Label(panel_derecho, text="Resumen del Pedido:", font=("Roboto", 16, "bold"), bg="#ffffff", fg="#d32f2f").pack(anchor="w", pady=5, fill="x")
 frame_resumen = tk.Frame(panel_derecho, bg="#ffffff")
 frame_resumen.pack(fill="both", expand=True, anchor="n", padx=5)
+
+# INICIAR EL CICLO DEL MENSAJE TEMPORAL
+iniciar_ciclo_mensaje()
 
 actualizar_ticket()
 ventana.mainloop()
