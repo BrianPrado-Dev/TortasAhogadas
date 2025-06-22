@@ -1277,7 +1277,73 @@ def mostrar_resumen_dia():
         
         tk.Label(aguas_frame, text="", bg="#e3f2fd").pack(pady=2)
 
-    # Botón imprimir
+    # FUNCIÓN PARA IMPRIMIR RESUMEN
+    def imprimir_resumen_moderno():
+        try:
+            printer_name = win32print.GetDefaultPrinter()
+            if not printer_name:
+                messagebox.showerror("Error", "No se encontró una impresora predeterminada.")
+                return
+
+            # Crear resumen para imprimir
+            resumen = "=============================\n"
+            resumen += "Resumen del Día\n"
+            resumen += "=============================\n"
+            
+            # Mostrar domicilio y total
+            for i, (domicilio, fecha, total) in enumerate(pedidos):
+                resumen += f"| {domicilio[:20].ljust(20)} | ${int(total)}\n"
+            
+            resumen += "=============================\n"
+            
+            if refrescos_detalle:
+                resumen += "REFRESCOS VENDIDOS:\n"
+                for tipo, cantidad in sorted(refrescos_detalle.items()):
+                    resumen += f"  {tipo}: {cantidad}\n"
+                resumen += "=============================\n"
+            
+            if aguas_detalle:
+                resumen += "AGUAS FRESCAS VENDIDAS:\n"
+                for tipo, cantidad in sorted(aguas_detalle.items()):
+                    resumen += f"  {tipo}: {cantidad}\n"
+                resumen += "=============================\n"
+            
+            resumen += f"TOTAL GENERAL: ${int(total_general)}\n"
+            resumen += "=============================\n"
+
+            hprinter = win32print.OpenPrinter(printer_name)
+            hdc = win32ui.CreateDC()
+            hdc.CreatePrinterDC(printer_name)
+            hdc.StartDoc("Resumen del Día")
+            hdc.StartPage()
+
+            font = win32ui.CreateFont({
+                "name": "Arial",
+                "height": 30,
+                "weight": FW_NORMAL
+            })
+            hdc.SelectObject(font)
+
+            y = 20
+            for line in resumen.split('\n'):
+                hdc.TextOut(10, y, line.rstrip())
+                y += 30
+
+            hdc.EndPage()
+            hdc.EndDoc()
+            win32print.ClosePrinter(hprinter)
+            messagebox.showinfo("Éxito", "Resumen del Día impreso correctamente.")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo imprimir: {str(e)}")
+
+    # BOTÓN IMPRIMIR RESUMEN
+    boton_imprimir = tk.Button(stats_content, text="🖨️ Imprimir Resumen", 
+                              font=("Roboto", 11, "bold"), bg="#4caf50", fg="white", 
+                              relief="flat", command=imprimir_resumen_moderno)
+    boton_imprimir.pack(fill="x", pady=15)
+    boton_imprimir.bind("<Enter>", lambda e: boton_imprimir.config(bg="#388e3c"))
+    boton_imprimir.bind("<Leave>", lambda e: boton_imprimir.config(bg="#4caf50"))
+    
 def imprimir_resumen_moderno():
     try:
         printer_name = win32print.GetDefaultPrinter()
