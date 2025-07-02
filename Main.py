@@ -8,6 +8,7 @@ from win32con import *
 import copy
 import sqlite3
 import json
+import subprocess  # AGREGADO: Para abrir el teclado táctil
 
 # Diccionario de productos (valores iniciales)
 menu_productos_default = {
@@ -27,6 +28,15 @@ menu_productos_default = {
     "Paquete 5": 630,
     "Torta Mini": 28
 }
+
+# NUEVA FUNCIÓN: Para abrir el teclado táctil de Windows
+def abrir_teclado_tactil():
+    """Abre el teclado táctil de Windows"""
+    try:
+        # Usar Popen para no bloquear el hilo principal
+        subprocess.Popen("osk", shell=True)
+    except Exception as e:
+        messagebox.showerror("Error", f"No se pudo abrir el teclado táctil: {str(e)}")
 
 # Cargar precios desde precios.json o usar valores por defecto
 def cargar_precios():
@@ -71,7 +81,7 @@ def mostrar_mensaje_temporal():
     global label_datos_cliente, mensaje_activo
     if label_datos_cliente and not mensaje_activo:
         mensaje_activo = True
-        label_datos_cliente.config(text="Datos del Cliente ( OJO agregar un número de teléfono real  >:/  )")
+        label_datos_cliente.config(text="Datos del Cliente ( RECURDA Agregar Número de telefono REAL :)  )")
         # Programar que se oculte después de 5 segundos
         ventana.after(10000, ocultar_mensaje_temporal)
 
@@ -1370,71 +1380,6 @@ def mostrar_resumen_dia():
     boton_imprimir.pack(fill="x", pady=15)
     boton_imprimir.bind("<Enter>", lambda e: boton_imprimir.config(bg="#388e3c"))
     boton_imprimir.bind("<Leave>", lambda e: boton_imprimir.config(bg="#4caf50"))
-    
-def imprimir_resumen_moderno():
-    try:
-        printer_name = win32print.GetDefaultPrinter()
-        if not printer_name:
-            messagebox.showerror("Error", "No se encontró una impresora predeterminada.")
-            return
-
-        # Crear resumen para imprimir
-        resumen = "=============================\n"
-        resumen += "Resumen del Día\n"
-        resumen += "=============================\n"
-        
-        # CAMBIO AQUÍ: Quitar la fecha, solo mostrar domicilio y total
-        for i, (domicilio, fecha, total) in enumerate(pedidos):
-            resumen += f"| {domicilio[:20].ljust(20)} | ${int(total)}\n"
-        
-        resumen += "=============================\n"
-        
-        if refrescos_detalle:
-            resumen += "REFRESCOS VENDIDOS:\n"
-            for tipo, cantidad in sorted(refrescos_detalle.items()):
-                resumen += f"  {tipo}: {cantidad}\n"
-            resumen += "=============================\n"
-        
-        if aguas_detalle:
-            resumen += "AGUAS FRESCAS VENDIDAS:\n"
-            for tipo, cantidad in sorted(aguas_detalle.items()):
-                resumen += f"  {tipo}: {cantidad}\n"
-            resumen += "=============================\n"
-        
-        resumen += f"TOTAL GENERAL: ${int(total_general)}\n"
-        resumen += "=============================\n"
-
-        hprinter = win32print.OpenPrinter(printer_name)
-        hdc = win32ui.CreateDC()
-        hdc.CreatePrinterDC(printer_name)
-        hdc.StartDoc("Resumen del Día")
-        hdc.StartPage()
-
-        font = win32ui.CreateFont({
-            "name": "Arial",
-            "height": 30,
-            "weight": FW_NORMAL
-        })
-        hdc.SelectObject(font)
-
-        y = 20
-        for line in resumen.split('\n'):
-            hdc.TextOut(10, y, line.rstrip())
-            y += 30
-
-        hdc.EndPage()
-        hdc.EndDoc()
-        win32print.ClosePrinter(hprinter)
-        messagebox.showinfo("Éxito", "Resumen del Día impreso correctamente.")
-    except Exception as e:
-        messagebox.showerror("Error", f"No se pudo imprimir: {str(e)}")
-
-    boton_imprimir = tk.Button(stats_content, text="🖨️ Imprimir Resumen", 
-                              font=("Roboto", 11, "bold"), bg="#4caf50", fg="white", 
-                              relief="flat", command=imprimir_resumen_moderno)
-    boton_imprimir.pack(fill="x", pady=15)
-    boton_imprimir.bind("<Enter>", lambda e: boton_imprimir.config(bg="#388e3c"))
-    boton_imprimir.bind("<Leave>", lambda e: boton_imprimir.config(bg="#4caf50"))
 
 def mostrar_lista_pedidos():
     hoy = date.today().isoformat()
@@ -1703,10 +1648,6 @@ frame_principal.grid_columnconfigure(0, weight=3)  # Más peso al panel izquierd
 frame_principal.grid_columnconfigure(1, weight=2)  # Menos peso al panel derecho (resumen)
 frame_principal.grid_rowconfigure(0, weight=1)
 
-# Marca de agua
-watermark = tk.Label(frame_principal, text="Created By BrianP", font=("Roboto", 8), fg="#757575", bg="#e6d2a1")
-watermark.place(relx=1.0, rely=1.0, anchor="se", x=-10, y=-10)
-
 panel_izquierdo = tk.Frame(frame_principal, bg="#ffffff", bd=1, relief="flat")
 panel_izquierdo.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
@@ -1882,6 +1823,20 @@ panel_derecho.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
 tk.Label(panel_derecho, text="Resumen del Pedido:", font=("Roboto", 16, "bold"), bg="#ffffff", fg="#d32f2f").pack(anchor="w", pady=5, fill="x")
 frame_resumen = tk.Frame(panel_derecho, bg="#ffffff")
 frame_resumen.pack(fill="both", expand=True, anchor="n", padx=5)
+
+# Marca de agua
+watermark = tk.Label(ventana, text="Created By BrianP", font=("Roboto", 8), fg="#757575", bg="#e6d2a1")
+watermark.place(relx=1.0, rely=1.0, anchor="se", x=-50, y=-20)
+
+# BOTÓN TECLADO TÁCTIL - Esquina inferior derecha, circular y más grande
+btn_teclado = tk.Button(ventana, text="TECLADO", font=("Roboto", 11, "bold"), 
+                        bg="#ff5722", fg="white", relief="flat", 
+                        activebackground="#d84315", command=abrir_teclado_tactil,
+                        width=1, height=1, bd=0, borderwidth=0, 
+                        highlightthickness=0, padx=45, pady=40)
+btn_teclado.place(relx=1.0, rely=1.0, anchor="se", x=-52, y=-90)
+btn_teclado.bind("<Enter>", lambda e: btn_teclado.config(bg="#d84315"))
+btn_teclado.bind("<Leave>", lambda e: btn_teclado.config(bg="#ff5722"))
 
 # INICIAR EL CICLO DEL MENSAJE TEMPORAL
 iniciar_ciclo_mensaje()
