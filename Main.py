@@ -1970,8 +1970,8 @@ btn_teclado = tk.Button(ventana, text="TECLADO", font=("Roboto", 11, "bold"),
                         bg="#ff5722", fg="white", relief="flat", 
                         activebackground="#d84315", command=abrir_teclado_tactil,
                         width=1, height=1, bd=0, borderwidth=0, 
-                        highlightthickness=0, padx=45, pady=40)
-btn_teclado.place(relx=1.0, rely=1.0, anchor="se", x=-52, y=-90)
+                        highlightthickness=0, padx=50, pady=50)
+btn_teclado.place(relx=1.0, rely=1.0, anchor="se", x=-52, y=-200)
 btn_teclado.bind("<Enter>", lambda e: btn_teclado.config(bg="#d84315"))
 btn_teclado.bind("<Leave>", lambda e: btn_teclado.config(bg="#ff5722"))
 
