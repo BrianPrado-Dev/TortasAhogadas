@@ -1,0 +1,79 @@
+===== PEDIDO - 2025-07-05 00:08 =====
+Fecha y Hora: 2025-07-05 00:08
+Domicilio: 1
+Teléfono: 222
+Cruces: 1
+Hora Específica: 11:40am
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Paquete 2 (x1) ($90.00)
+    Nota: agua fresca Jamaica
+
+Total: $105.00
+===================================
+
+===== PEDIDO - 2025-07-05 00:09 =====
+Fecha y Hora: 2025-07-05 00:09
+Domicilio: 1
+Teléfono: 222
+Cruces: 1
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Paquete 1 (x1) ($85.00)
+    Nota: agua fresca Jamaica
+
+Total: $100.00
+===================================
+
+===== PEDIDO - 2025-07-05 00:09 =====
+Fecha y Hora: 2025-07-05 00:09
+Domicilio: 1
+Teléfono: 222
+Cruces: 1
+Hora Específica: 12:00PM
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Paquete 2 (x1) ($85.00)
+    Nota: FANTA
+
+Total: $100.00
+===================================
+
+===== PEDIDO - 2025-07-05 00:10 =====
+Fecha y Hora: 2025-07-05 00:10
+Domicilio: 1
+Teléfono: 222
+Cruces: 1
+Hora Específica: 1:00PM
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Torta (x1) ($55.00)
+
+Total: $70.00
+===================================
+
+===== PEDIDO - 2025-07-05 00:10 =====
+Fecha y Hora: 2025-07-05 00:10
+Domicilio: 1
+Teléfono: 222
+Cruces: 1
+Hora Específica: 1pm
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Torta (x1) ($55.00)
+  - Refresco (x1) ($25.00)
+    Nota: COCA
+
+Total: $95.00
+===================================
+

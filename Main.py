@@ -1385,6 +1385,59 @@ def mostrar_resumen_dia():
     boton_imprimir.bind("<Enter>", lambda e: boton_imprimir.config(bg="#388e3c"))
     boton_imprimir.bind("<Leave>", lambda e: boton_imprimir.config(bg="#4caf50"))
 
+def convertir_hora_a_minutos(hora_str):
+    """Convierte hora en formato AM/PM a minutos desde medianoche para ordenar"""
+    try:
+        if not hora_str:
+            return 9999
+            
+        hora_str = hora_str.strip().upper()
+        
+        # Remover espacios entre número y AM/PM y normalizar
+        hora_str = hora_str.replace(" AM", "AM").replace(" PM", "PM")
+        hora_str = hora_str.replace("A.M.", "AM").replace("P.M.", "PM")
+        
+        # Determinar si es AM o PM
+        es_pm = "PM" in hora_str
+        es_am = "AM" in hora_str
+        
+        # Remover AM/PM para procesar solo la hora
+        hora_limpia = hora_str.replace("AM", "").replace("PM", "").strip()
+        
+        # Si no hay AM/PM, asumir que es PM si está en horario laboral típico
+        if not es_am and not es_pm:
+            # Para horas entre 7-11, asumir AM. Para 12-5, asumir PM
+            hora_temp = int(hora_limpia.split(":")[0]) if ":" in hora_limpia else int(hora_limpia)
+            if 7 <= hora_temp <= 11:
+                es_am = True
+            else:
+                es_pm = True
+        
+        # Separar horas y minutos
+        if ":" in hora_limpia:
+            partes = hora_limpia.split(":")
+            horas = int(partes[0])
+            minutos = int(partes[1])
+        else:
+            horas = int(hora_limpia)
+            minutos = 0
+        
+        # Convertir a formato 24 horas
+        if es_am:
+            if horas == 12:
+                horas = 0  # 12 AM = medianoche (00:00)
+        elif es_pm:
+            if horas != 12:
+                horas += 12  # PM (excepto 12 PM que ya es 12)
+        
+        # Convertir todo a minutos desde medianoche
+        total_minutos = horas * 60 + minutos
+        
+        return total_minutos
+    except Exception as e:
+        # Si hay error en el parsing, devolver un valor alto para ponerlo al final
+        return 9999
+
 def mostrar_lista_pedidos():
     hoy = date.today().isoformat()
     archivo = f"historial_{hoy}.txt"
@@ -1395,13 +1448,13 @@ def mostrar_lista_pedidos():
 
     ventana_lista = tk.Toplevel(ventana)
     ventana_lista.title("Lista de pedidos del día")
-    window_width = max(int(screen_width * 0.7), 800)
+    window_width = max(int(screen_width * 0.9), 1200)  # Ventana más ancha
     window_height = max(int(screen_height * 0.8), 600)
     ventana_lista.geometry(f"{window_width}x{window_height}")
     ventana_lista.configure(bg="#f5f5f5")
-    ventana_lista.minsize(800, 600)
+    ventana_lista.minsize(1200, 600)
 
-    # Header
+    # Header principal
     header_frame = tk.Frame(ventana_lista, bg="#2196f3", height=60)
     header_frame.pack(fill="x", pady=(0, 10))
     header_frame.pack_propagate(False)
@@ -1409,26 +1462,73 @@ def mostrar_lista_pedidos():
     tk.Label(header_frame, text="📋 Lista de Pedidos del Día", 
              font=("Roboto", 16, "bold"), bg="#2196f3", fg="white").pack(expand=True)
 
-    # Scrollable area
-    canvas = tk.Canvas(ventana_lista, bg="#f5f5f5")
-    scrollbar = tk.Scrollbar(ventana_lista, orient="vertical", command=canvas.yview)
-    frame_pedidos = tk.Frame(canvas, bg="#f5f5f5")
+    # Container principal con dos columnas
+    main_container = tk.Frame(ventana_lista, bg="#f5f5f5")
+    main_container.pack(fill="both", expand=True, padx=20)
 
-    frame_pedidos.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-    canvas.create_window((0, 0), window=frame_pedidos, anchor="nw")
-    canvas.configure(yscrollcommand=scrollbar.set)
+    # Frame izquierdo - Sin hora específica
+    left_frame = tk.Frame(main_container, bg="white", relief="solid", bd=1)
+    left_frame.pack(side="left", fill="both", expand=True, padx=(0, 5))
 
-    canvas.pack(side="left", fill="both", expand=True, padx=20)
-    scrollbar.pack(side="right", fill="y")
+    # Header izquierdo
+    header_izq = tk.Frame(left_frame, bg="#e8f5e8", height=40)
+    header_izq.pack(fill="x")
+    header_izq.pack_propagate(False)
+    tk.Label(header_izq, text="🕐 PEDIDOS SIN HORA ESPECÍFICA", 
+             font=("Roboto", 12, "bold"), bg="#e8f5e8", fg="#2e7d32").pack(expand=True)
 
+    # Scrollable area izquierda
+    canvas_izq = tk.Canvas(left_frame, bg="white")
+    scrollbar_izq = tk.Scrollbar(left_frame, orient="vertical", command=canvas_izq.yview)
+    frame_pedidos_izq = tk.Frame(canvas_izq, bg="white")
+
+    frame_pedidos_izq.bind("<Configure>", lambda e: canvas_izq.configure(scrollregion=canvas_izq.bbox("all")))
+    canvas_izq.create_window((0, 0), window=frame_pedidos_izq, anchor="nw")
+    canvas_izq.configure(yscrollcommand=scrollbar_izq.set)
+
+    canvas_izq.pack(side="left", fill="both", expand=True)
+    scrollbar_izq.pack(side="right", fill="y")
+
+    # Separador visual
+    separator = tk.Frame(main_container, bg="#2196f3", width=4)
+    separator.pack(side="left", fill="y", padx=5)
+
+    # Frame derecho - Con hora específica
+    right_frame = tk.Frame(main_container, bg="white", relief="solid", bd=1)
+    right_frame.pack(side="right", fill="both", expand=True, padx=(5, 0))
+
+    # Header derecho
+    header_der = tk.Frame(right_frame, bg="#fff3e0", height=40)
+    header_der.pack(fill="x")
+    header_der.pack_propagate(False)
+    tk.Label(header_der, text="⏰ PEDIDOS CON HORA ESPECÍFICA", 
+             font=("Roboto", 12, "bold"), bg="#fff3e0", fg="#e65100").pack(expand=True)
+
+    # Scrollable area derecha
+    canvas_der = tk.Canvas(right_frame, bg="white")
+    scrollbar_der = tk.Scrollbar(right_frame, orient="vertical", command=canvas_der.yview)
+    frame_pedidos_der = tk.Frame(canvas_der, bg="white")
+
+    frame_pedidos_der.bind("<Configure>", lambda e: canvas_der.configure(scrollregion=canvas_der.bbox("all")))
+    canvas_der.create_window((0, 0), window=frame_pedidos_der, anchor="nw")
+    canvas_der.configure(yscrollcommand=scrollbar_der.set)
+
+    canvas_der.pack(side="left", fill="both", expand=True)
+    scrollbar_der.pack(side="right", fill="y")
+
+    # Leer y procesar pedidos
     with open(archivo, "r", encoding="utf-8") as f:
         contenido = f.read().strip().split("===== PEDIDO - ")[1:]
 
     if not contenido:
-        tk.Label(frame_pedidos, text="No hay pedidos para mostrar", 
-                font=("Roboto", 14), bg="#f5f5f5", fg="#666").pack(pady=50)
+        tk.Label(frame_pedidos_izq, text="No hay pedidos para mostrar", 
+                font=("Roboto", 14), bg="white", fg="#666").pack(pady=50)
         return
 
+    pedidos_sin_hora = []
+    pedidos_con_hora = []
+
+    # Separar pedidos con y sin hora específica
     for i, pedido in enumerate(reversed(contenido)):
         lineas = pedido.strip().split("\n")
         if not lineas:
@@ -1482,108 +1582,138 @@ def mostrar_lista_pedidos():
         if items and anotacion_actual:
             items[-1]["anotacion"] = " ".join(anotacion_actual).strip()
 
-        # Crear card del pedido
-        card_frame = tk.Frame(frame_pedidos, bg="white", relief="solid", bd=1)
-        card_frame.pack(fill="x", pady=10, padx=10)
+        pedido_data = {
+            "fecha_hora": fecha_hora,
+            "domicilio": domicilio,
+            "telefono": telefono,
+            "cruces": cruces,
+            "hora_espec": hora_espec,
+            "total": total,
+            "items": items
+        }
 
-        # Header del card
-        card_header = tk.Frame(card_frame, bg="#e3f2fd", height=40)
+        if hora_espec:
+            pedidos_con_hora.append(pedido_data)
+        else:
+            pedidos_sin_hora.append(pedido_data)
+
+    # Ordenar pedidos con hora específica (de más tarde a más temprano - DESCENDENTE)
+    pedidos_con_hora.sort(key=lambda x: convertir_hora_a_minutos(x["hora_espec"]), reverse=True)
+
+    # Función para crear card de pedido - VERSION GRANDE PARA 1280x720
+    def crear_card_pedido(pedido_data, frame_padre, mostrar_hora_especifica=False):
+        card_frame = tk.Frame(frame_padre, bg="white", relief="solid", bd=2)
+        card_frame.pack(fill="x", pady=15, padx=15)
+
+        # Si tiene hora específica, mostrarla primero - MAS GRANDE
+        if mostrar_hora_especifica and pedido_data["hora_espec"]:
+            hora_frame = tk.Frame(card_frame, bg="#fff3e0")
+            hora_frame.pack(fill="x", pady=8)
+            tk.Label(hora_frame, text=f"⏰ Hora específica: {pedido_data['hora_espec']}", 
+                    font=("Roboto", 14, "bold"), bg="#fff3e0", fg="#e65100").pack(pady=8)
+
+        # Header del card - MAS GRANDE
+        card_header = tk.Frame(card_frame, bg="#e3f2fd", height=50)
         card_header.pack(fill="x")
         card_header.pack_propagate(False)
 
         header_left = tk.Frame(card_header, bg="#e3f2fd")
-        header_left.pack(side="left", fill="both", expand=True, padx=15, pady=8)
+        header_left.pack(side="left", fill="both", expand=True, padx=20, pady=12)
 
-        # Extraer solo la hora de fecha_hora (formato: "YYYY-MM-DD HH:MM")
-        solo_hora = fecha_hora.split(" ")[1] if " " in fecha_hora else fecha_hora
-        tk.Label(header_left, text=f"🕐 {solo_hora}", font=("Roboto", 12, "bold"), 
+        # Extraer solo la hora de fecha_hora - FUENTE MAS GRANDE
+        solo_hora = pedido_data["fecha_hora"].split(" ")[1] if " " in pedido_data["fecha_hora"] else pedido_data["fecha_hora"]
+        tk.Label(header_left, text=f"🕐 {solo_hora}", font=("Roboto", 16, "bold"), 
                 bg="#e3f2fd", fg="#1976d2").pack(side="left")
 
-        # Información del cliente
+        # Información del cliente - MAS GRANDE Y EXPLICITA
         info_frame = tk.Frame(card_frame, bg="white")
-        info_frame.pack(fill="x", padx=15, pady=10)
+        info_frame.pack(fill="x", padx=20, pady=15)
 
-        cliente_frame = tk.Frame(info_frame, bg="#f8f9fa")
+        # Frame con fondo para datos del cliente
+        cliente_frame = tk.Frame(info_frame, bg="#f8f9fa", relief="solid", bd=1)
         cliente_frame.pack(fill="x", pady=5)
         
         tk.Label(cliente_frame, text="📍 INFORMACIÓN DEL CLIENTE", 
-                font=("Roboto", 10, "bold"), bg="#f8f9fa", fg="#495057").pack(anchor="w", padx=10, pady=5)
-        
-        # Grid de información
-        grid_frame = tk.Frame(cliente_frame, bg="#f8f9fa")
-        grid_frame.pack(fill="x", padx=10, pady=(0, 10))
-        
-        tk.Label(grid_frame, text="🏠 Domicilio:", font=("Roboto", 9, "bold"), 
-                bg="#f8f9fa", fg="#6c757d").grid(row=0, column=0, sticky="w", padx=(0, 5))
-        tk.Label(grid_frame, text=domicilio, font=("Roboto", 9), 
-                bg="#f8f9fa", fg="#212529").grid(row=0, column=1, sticky="w")
-        
-        tk.Label(grid_frame, text="📞 Teléfono:", font=("Roboto", 9, "bold"), 
-                bg="#f8f9fa", fg="#6c757d").grid(row=1, column=0, sticky="w", padx=(0, 5))
-        tk.Label(grid_frame, text=telefono, font=("Roboto", 9), 
-                bg="#f8f9fa", fg="#212529").grid(row=1, column=1, sticky="w")
-        
-        tk.Label(grid_frame, text="🛣️ Cruces:", font=("Roboto", 9, "bold"), 
-                bg="#f8f9fa", fg="#6c757d").grid(row=2, column=0, sticky="w", padx=(0, 5))
-        tk.Label(grid_frame, text=cruces, font=("Roboto", 9), 
-                bg="#f8f9fa", fg="#212529").grid(row=2, column=1, sticky="w")
+                font=("Roboto", 12, "bold"), bg="#f8f9fa", fg="#495057").pack(anchor="w", padx=15, pady=8)
 
-        if hora_espec:
-            tk.Label(grid_frame, text="⏰ Hora específica:", font=("Roboto", 9, "bold"), 
-                    bg="#f8f9fa", fg="#6c757d").grid(row=3, column=0, sticky="w", padx=(0, 5))
-            tk.Label(grid_frame, text=hora_espec, font=("Roboto", 9), 
-                    bg="#f8f9fa", fg="#212529").grid(row=3, column=1, sticky="w")
+        tk.Label(cliente_frame, text=f"🏠 Dirección: {pedido_data['domicilio']}", font=("Roboto", 11, "bold"), 
+                bg="#f8f9fa", fg="#333").pack(anchor="w", padx=20, pady=3)
+        tk.Label(cliente_frame, text=f"📞 Teléfono: {pedido_data['telefono']}", font=("Roboto", 11), 
+                bg="#f8f9fa", fg="#666").pack(anchor="w", padx=20, pady=2)
+        tk.Label(cliente_frame, text=f"🛣️ Cruces: {pedido_data['cruces']}", font=("Roboto", 11), 
+                bg="#f8f9fa", fg="#666").pack(anchor="w", padx=20, pady=2)
 
-        # Productos
-        productos_frame = tk.Frame(info_frame, bg="white")
-        productos_frame.pack(fill="x", pady=(10, 0))
+        # Productos COMPLETAMENTE DESGLOSADOS - MAS GRANDE
+        productos_frame = tk.Frame(card_frame, bg="white")
+        productos_frame.pack(fill="x", padx=20, pady=10)
         
-        tk.Label(productos_frame, text="🍽️ PRODUCTOS PEDIDOS", 
-                font=("Roboto", 10, "bold"), bg="white", fg="#495057").pack(anchor="w", pady=(0, 5))
-
-        # Agrupar items
+        tk.Label(productos_frame, text="🍽️ PRODUCTOS PEDIDOS", font=("Roboto", 12, "bold"), 
+                bg="white", fg="#495057").pack(anchor="w", pady=(0, 8))
+        
         items_agrupados = {}
-        for item in items:
+        for item in pedido_data["items"]:
             grupo = item.get("grupo", "General")
             items_agrupados.setdefault(grupo, []).append(item)
 
         for grupo in sorted(items_agrupados.keys(), key=lambda x: (x == "General", x)):
-            grupo_frame = tk.Frame(productos_frame, bg="#fff3e0")
-            grupo_frame.pack(fill="x", pady=2)
+            # Frame del grupo
+            grupo_frame = tk.Frame(productos_frame, bg="#fff3e0", relief="solid", bd=1)
+            grupo_frame.pack(fill="x", pady=5)
             
-            tk.Label(grupo_frame, text=f"👤 {grupo.upper()}", 
-                    font=("Roboto", 9, "bold"), bg="#fff3e0", fg="#e65100").pack(anchor="w", padx=10, pady=3)
+            tk.Label(grupo_frame, text=f"👤 Cliente: {grupo.upper()}", 
+                    font=("Roboto", 11, "bold"), bg="#fff3e0", fg="#e65100").pack(anchor="w", padx=15, pady=5)
             
+            # Desglosar cada producto
             for item in items_agrupados[grupo]:
                 item_frame = tk.Frame(grupo_frame, bg="#fff3e0")
-                item_frame.pack(fill="x", padx=20, pady=1)
+                item_frame.pack(fill="x", padx=25, pady=2)
                 
                 item_text = f"• {item['nombre']} (x{item['cantidad']}) - ${item['precio']:.2f}"
-                tk.Label(item_frame, text=item_text, font=("Roboto", 9), 
+                tk.Label(item_frame, text=item_text, font=("Roboto", 10), 
                         bg="#fff3e0", fg="#333").pack(anchor="w")
                 
+                # Mostrar anotaciones si las hay - MAS GRANDE Y NOTORIO
                 if item['anotacion']:
-                    tk.Label(item_frame, text=f"  📝 {item['anotacion']}", 
-                            font=("Roboto", 8, "italic"), bg="#fff3e0", fg="#666").pack(anchor="w")
+                    tk.Label(item_frame, text=f"  📝 Nota: {item['anotacion']}", 
+                            font=("Roboto", 11, "bold"), bg="#fff3e0", fg="#d84315").pack(anchor="w", pady=2)
 
-        # Footer con precio total y botón
+        # Footer con precio y botón - MAS GRANDE
         footer_frame = tk.Frame(card_frame, bg="#f8f9fa")
-        footer_frame.pack(fill="x", pady=10)
+        footer_frame.pack(fill="x", pady=15)
         
-        # Mostrar precio total del pedido - MAS GRANDE Y A LA DERECHA
-        tk.Label(footer_frame, text=f"💰 Total: ${total:.2f}", 
-                font=("Roboto", 14, "bold"), bg="#f8f9fa", fg="#d32f2f").pack(side="right", padx=15, pady=(0, 5))
+        # Precio más grande y prominente
+        tk.Label(footer_frame, text=f"💰 Total: ${pedido_data['total']:.2f}", 
+                font=("Roboto", 16, "bold"), bg="#f8f9fa", fg="#d32f2f").pack(side="right", padx=20, pady=(0, 8))
         
-        # Generar ticket para imprimir
-        ticket = imprimir_ticket_personalizado(fecha_hora, domicilio, telefono, cruces, total, items)
+        ticket = imprimir_ticket_personalizado(pedido_data["fecha_hora"], pedido_data["domicilio"], 
+                                             pedido_data["telefono"], pedido_data["cruces"], 
+                                             pedido_data["total"], pedido_data["items"])
         
+        # Botón más grande
         boton_imprimir = tk.Button(footer_frame, text="🖨️ Imprimir Ticket", 
-                                  font=("Roboto", 10, "bold"), bg="#4caf50", fg="white", 
+                                  font=("Roboto", 12, "bold"), bg="#4caf50", fg="white", 
                                   relief="flat", activebackground="#388e3c",
-                                  command=lambda t=ticket: imprimir_ticket_directo(t))
-        boton_imprimir.pack(side="right", padx=15, pady=5)
+                                  command=lambda t=ticket: imprimir_ticket_directo(t),
+                                  padx=20, pady=8)
+        boton_imprimir.pack(side="right", padx=20, pady=8)
         boton_imprimir.bind("<Enter>", lambda e: boton_imprimir.config(bg="#388e3c"))
         boton_imprimir.bind("<Leave>", lambda e: boton_imprimir.config(bg="#4caf50"))
+
+    # Mostrar pedidos sin hora específica
+    if not pedidos_sin_hora:
+        tk.Label(frame_pedidos_izq, text="No hay pedidos sin hora específica", 
+                font=("Roboto", 12), bg="white", fg="#666").pack(pady=30)
+    else:
+        for pedido in pedidos_sin_hora:
+            crear_card_pedido(pedido, frame_pedidos_izq, False)
+
+    # Mostrar pedidos con hora específica (ordenados)
+    if not pedidos_con_hora:
+        tk.Label(frame_pedidos_der, text="No hay pedidos con hora específica", 
+                font=("Roboto", 12), bg="white", fg="#666").pack(pady=30)
+    else:
+        for pedido in pedidos_con_hora:
+            crear_card_pedido(pedido, frame_pedidos_der, True)
 
 def limpiar_pedido():
     global ventana_sabores, hora_especifica, grupo_actual, grupos
