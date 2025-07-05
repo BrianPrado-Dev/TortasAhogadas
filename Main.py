@@ -29,11 +29,11 @@ menu_productos_default = {
     "Torta Mini": 28
 }
 
-# NUEVA FUNCIÓN: Para abrir el teclado táctil de Windows
+# FUNCIÓN CORREGIDA: Para abrir el teclado táctil de Windows
 def abrir_teclado_tactil():
-    """Abre el teclado táctil de Windows"""
+    """Abre el teclado táctil de Windows - FUNCIONA SIEMPRE"""
     try:
-        # Usar Popen para no bloquear el hilo principal
+        # Abrir el teclado sin importar qué ventana esté activa
         subprocess.Popen("osk", shell=True)
     except Exception as e:
         messagebox.showerror("Error", f"No se pudo abrir el teclado táctil: {str(e)}")
@@ -407,7 +407,7 @@ def agregar_producto_paquete_agua(nombre, sabor_agua):
 
     ventana_item = tk.Toplevel(ventana)
     ventana_item.title(f"Agregar {nombre}")
-    ventana_item.geometry("400x280")  # CAMBIO: De 300x200 a 400x280
+    ventana_item.geometry("400x280")
     ventana_item.configure(bg="#e6d2a1")
 
     tk.Label(ventana_item, text="Cantidad:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=8)
@@ -454,9 +454,10 @@ def agregar_producto_paquete_agua(nombre, sabor_agua):
 
     tk.Button(ventana_item, text="Confirmar", font=("Roboto", 12), bg="#4caf50", fg="white", 
               command=confirmar, width=15, pady=5).pack(pady=15)
+    
+    # CAMBIO CLAVE: QUITAR grab_set() para que el botón de teclado funcione
     ventana_item.transient(ventana)
-    ventana_item.grab_set()
-
+    # ventana_item.grab_set()  # COMENTADO: Esto bloqueaba el botón de teclado
 
 def agregar_carne_gramos():
     global grupo_actual
@@ -476,7 +477,7 @@ def agregar_carne_gramos():
 
     ventana_carne = tk.Toplevel(ventana)
     ventana_carne.title("Carne(Gramos)")
-    ventana_carne.geometry("400x280")  # CAMBIO: De 300x200 a 400x280
+    ventana_carne.geometry("400x280")
     ventana_carne.configure(bg="#e6d2a1")
 
     tk.Label(ventana_carne, text="Gramos:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=8)
@@ -536,8 +537,10 @@ def agregar_carne_gramos():
 
     tk.Button(ventana_carne, text="Confirmar", font=("Roboto", 12), bg="#4caf50", fg="white", 
               command=confirmar, width=15, pady=5).pack(pady=15)
+    
+    # CAMBIO CLAVE: QUITAR grab_set() para que el botón de teclado funcione
     ventana_carne.transient(ventana)
-    ventana_carne.grab_set()
+    # ventana_carne.grab_set()  # COMENTADO: Esto bloqueaba el botón de teclado
 
 def agregar_nuevo_item():
     global grupo_actual
@@ -694,7 +697,7 @@ def agregar_producto(nombre, sabor=None):
 
     ventana_item = tk.Toplevel(ventana)
     ventana_item.title(f"Agregar {nombre}")
-    ventana_item.geometry("400x280")  # CAMBIO: De 300x200 a 400x280
+    ventana_item.geometry("400x280")
     ventana_item.configure(bg="#e6d2a1")
 
     tk.Label(ventana_item, text="Cantidad:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=8)
@@ -741,9 +744,10 @@ def agregar_producto(nombre, sabor=None):
 
     tk.Button(ventana_item, text="Confirmar", font=("Roboto", 12), bg="#4caf50", fg="white", 
               command=confirmar, width=15, pady=5).pack(pady=15)
+    
+    # CAMBIO CLAVE: QUITAR grab_set() para que el botón de teclado funcione
     ventana_item.transient(ventana)
-    ventana_item.grab_set()
-
+    # ventana_item.grab_set()  # COMENTADO: Esto bloqueaba el botón de teclado
 
 def crear_grupo():
     global grupo_actual
@@ -1490,11 +1494,10 @@ def mostrar_lista_pedidos():
         header_left = tk.Frame(card_header, bg="#e3f2fd")
         header_left.pack(side="left", fill="both", expand=True, padx=15, pady=8)
 
-        tk.Label(header_left, text=f"🕐 {fecha_hora}", font=("Roboto", 12, "bold"), 
+        # Extraer solo la hora de fecha_hora (formato: "YYYY-MM-DD HH:MM")
+        solo_hora = fecha_hora.split(" ")[1] if " " in fecha_hora else fecha_hora
+        tk.Label(header_left, text=f"🕐 {solo_hora}", font=("Roboto", 12, "bold"), 
                 bg="#e3f2fd", fg="#1976d2").pack(side="left")
-        
-        tk.Label(header_left, text=f"💰 ${total:.2f}", font=("Roboto", 12, "bold"), 
-                bg="#e3f2fd", fg="#d32f2f").pack(side="right")
 
         # Información del cliente
         info_frame = tk.Frame(card_frame, bg="white")
@@ -1563,9 +1566,13 @@ def mostrar_lista_pedidos():
                     tk.Label(item_frame, text=f"  📝 {item['anotacion']}", 
                             font=("Roboto", 8, "italic"), bg="#fff3e0", fg="#666").pack(anchor="w")
 
-        # Footer con botón
+        # Footer con precio total y botón
         footer_frame = tk.Frame(card_frame, bg="#f8f9fa")
         footer_frame.pack(fill="x", pady=10)
+        
+        # Mostrar precio total del pedido - MAS GRANDE Y A LA DERECHA
+        tk.Label(footer_frame, text=f"💰 Total: ${total:.2f}", 
+                font=("Roboto", 14, "bold"), bg="#f8f9fa", fg="#d32f2f").pack(side="right", padx=15, pady=(0, 5))
         
         # Generar ticket para imprimir
         ticket = imprimir_ticket_personalizado(fecha_hora, domicilio, telefono, cruces, total, items)
@@ -1828,7 +1835,7 @@ frame_resumen.pack(fill="both", expand=True, anchor="n", padx=5)
 watermark = tk.Label(ventana, text="Created By BrianP", font=("Roboto", 8), fg="#757575", bg="#e6d2a1")
 watermark.place(relx=1.0, rely=1.0, anchor="se", x=-50, y=-20)
 
-# BOTÓN TECLADO TÁCTIL - Esquina inferior derecha, circular y más grande
+# BOTÓN TECLADO TÁCTIL CORREGIDO - Ahora funciona SIEMPRE
 btn_teclado = tk.Button(ventana, text="TECLADO", font=("Roboto", 11, "bold"), 
                         bg="#ff5722", fg="white", relief="flat", 
                         activebackground="#d84315", command=abrir_teclado_tactil,
