@@ -1,0 +1,45 @@
+===== PEDIDO - 2025-07-07 20:11 =====
+Fecha y Hora: 2025-07-07 20:11
+Domicilio: 1
+Teléfono: 222
+Cruces: 1
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Paquete 2 (x1) ($85.00)
+    Nota: COCA
+
+Total: $100.00
+===================================
+
+===== PEDIDO - 2025-07-07 20:11 =====
+Fecha y Hora: 2025-07-07 20:11
+Domicilio: 1
+Teléfono: 222
+Cruces: 1
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Paquete 2 (x1) ($85.00)
+    Nota: COCA
+
+Total: $100.00
+===================================
+
+===== PEDIDO - 2025-07-07 20:12 =====
+Fecha y Hora: 2025-07-07 20:12
+Domicilio: 1
+Teléfono: 222
+Cruces: 1
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Paquete 2 (x1) ($85.00)
+    Nota: COCA
+
+Total: $100.00
+===================================
+

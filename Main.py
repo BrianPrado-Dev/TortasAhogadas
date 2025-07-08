@@ -29,6 +29,18 @@ menu_productos_default = {
     "Torta Mini": 28
 }
 
+# FUNCIÓN PARA CONFIGURAR CODIFICACIÓN DE CONSOLA
+def configurar_consola():
+    """Configura la consola para manejar caracteres especiales"""
+    try:
+        import os
+        # Configurar codificación UTF-8 en Windows
+        if os.name == 'nt':
+            os.system('chcp 65001 > nul')
+        print("[INIT] Consola configurada correctamente")
+    except Exception as e:
+        print(f"[WARNING] No se pudo configurar la consola: {e}")
+
 # FUNCIÓN CORREGIDA: Para abrir el teclado táctil de Windows
 def abrir_teclado_tactil():
     """Abre el teclado táctil de Windows - FUNCIONA SIEMPRE"""
@@ -65,6 +77,9 @@ def guardar_precios():
 # Inicializar menu_productos
 menu_productos = {}
 cargar_precios()
+
+# Configurar consola para evitar errores de codificación
+configurar_consola()
 
 pedido_actual = []
 grupos = []
@@ -822,19 +837,19 @@ def eliminar_item(indice):
 
 def guardar_en_historial(fecha_hora, domicilio, total):
     hoy = date.today().isoformat()
-    telefono = entry_telefono.get()
-    cruces = entry_cruces.get()
+    telefono = entry_telefono.get().strip()
+    cruces = entry_cruces.get().strip()
     
     items_copy = copy.deepcopy(pedido_actual)
     
     with open(f"historial_{hoy}.txt", "a", encoding="utf-8") as f:
         f.write(f"===== PEDIDO - {fecha_hora} =====\n")
         f.write(f"Fecha y Hora: {fecha_hora}\n")
-        f.write(f"Domicilio: {domicilio}\n")
+        f.write(f"Domicilio: {domicilio.strip()}\n")
         f.write(f"Teléfono: {telefono}\n")
         f.write(f"Cruces: {cruces}\n")
         if hora_especifica:
-            f.write(f"Hora Específica: {hora_especifica}\n")
+            f.write(f"Hora Específica: {hora_especifica.strip()}\n")
         f.write("--- Productos ---\n")
 
         items_agrupados = {}
@@ -851,27 +866,63 @@ def guardar_en_historial(fecha_hora, domicilio, total):
 
         f.write(f"\nTotal: ${total:.2f}\n")
         f.write("=" * 35  + "\n\n")
+    
+    print(f"[SAVE] Guardado en historial: {len(pedido_actual)} productos, Total: ${total:.2f}")
 
-def imprimir_texto(texto, doc_name="Documento"):
+# ========== FUNCIONES CORREGIDAS PARA IMPRESIÓN ==========
+
+def verificar_impresora():
+    """Verifica si hay una impresora disponible y configurada"""
     try:
         printer_name = win32print.GetDefaultPrinter()
         if not printer_name:
-            messagebox.showerror("Error", "No se encontró una impresora predeterminada. Configura una en el sistema.")
-            return
+            return False, "No se encontró una impresora predeterminada. Configura una en el sistema."
         
+        # Verificar si la impresora está disponible
+        printers = win32print.EnumPrinters(2)
+        printer_encontrada = False
+        for printer in printers:
+            if printer[2] == printer_name:
+                printer_encontrada = True
+                break
+        
+        if not printer_encontrada:
+            return False, f"La impresora '{printer_name}' no está disponible."
+        
+        return True, printer_name
+        
+    except Exception as e:
+        return False, f"Error al verificar la impresora: {str(e)}"
+
+def imprimir_texto(texto, doc_name="Documento"):
+    """Función mejorada para imprimir con mejor manejo de errores"""
+    try:
+        # Verificar impresora primero
+        impresora_ok, resultado = verificar_impresora()
+        if not impresora_ok:
+            messagebox.showerror("Error de Impresora", resultado)
+            return False
+        
+        printer_name = resultado
+        print(f"[PRINT] Intentando imprimir en: {printer_name}")
+        
+        # Abrir impresora
         hprinter = win32print.OpenPrinter(printer_name)
         
+        # Crear contexto de dispositivo
         hdc = win32ui.CreateDC()
         try:
             hdc.CreatePrinterDC(printer_name)
         except win32ui.error as e:
             messagebox.showerror("Error", f"No se pudo crear el contexto de dispositivo: {str(e)}")
             win32print.ClosePrinter(hprinter)
-            return
+            return False
         
+        # Iniciar documento
         hdc.StartDoc(doc_name)
         hdc.StartPage()
 
+        # Configurar fuente
         try:
             font = win32ui.CreateFont({
                 "name": "Arial",
@@ -880,154 +931,498 @@ def imprimir_texto(texto, doc_name="Documento"):
             })
             hdc.SelectObject(font)
         except win32ui.error as e:
-            messagebox.showerror("Error", f"No se pudo seleccionar la fuente 'Courier New': {str(e)}")
+            messagebox.showerror("Error", f"No se pudo configurar la fuente: {str(e)}")
             hdc.EndPage()
             hdc.EndDoc()
             win32print.ClosePrinter(hprinter)
-            return
+            return False
 
+        # Imprimir líneas
         y = 20
+        lineas_procesadas = 0
         for line in texto.split('\n'):
-            hdc.TextOut(20, y, line.rstrip())
-            y += 30
+            try:
+                hdc.TextOut(20, y, line.rstrip())
+                y += 30
+                lineas_procesadas += 1
+            except Exception as e:
+                print(f"Error imprimiendo linea {lineas_procesadas}: {e}")
+                continue
 
+        # Finalizar
         hdc.EndPage()
         hdc.EndDoc()
-        
         win32print.ClosePrinter(hprinter)
         
+        print(f"[SUCCESS] Impresion completada: {lineas_procesadas} lineas procesadas")
         messagebox.showinfo("Éxito", f"{doc_name} impreso correctamente.")
+        return True
+        
     except win32print.error as e:
-        messagebox.showerror("Error", f"Error al acceder a la impresora: {str(e)}. Verifica que esté conectada y configurada.")
+        error_msg = f"Error de impresora: {str(e)}. Verifica que esté conectada y configurada."
+        messagebox.showerror("Error de Impresión", error_msg)
+        print(f"[ERROR] Error win32print: {e}")
+        return False
     except Exception as e:
-        messagebox.showerror("Error", f"No se pudo imprimir: {str(e)}. Contacta al soporte con este mensaje.")
+        error_msg = f"Error inesperado al imprimir: {str(e)}"
+        messagebox.showerror("Error de Impresión", error_msg)
+        print(f"[ERROR] Error general: {e}")
+        return False
 
 def imprimir_ticket_personalizado(fecha, domicilio, telefono, cruces, total, items):
+    """Función mejorada para generar el ticket"""
     global hora_especifica
-    ticket = f"{centrar('TORTAS AHOGADAS')}\n"
-    ticket += f"{centrar('DOÑA SUSY')}\n"
-    ticket += f"{centrar('Geranio #869A')}\n"
-    ticket += f"{centrar('Col.Tulipanes CP:45647')}\n"
-    ticket += f"{centrar('33-3684-4525')}\n"
-    ticket += "=" * 32 + "\n"
-    ticket += dividir_campo(domicilio, "Domicilio: ") + "\n"
-    ticket += dividir_campo(telefono, "Teléfono: ") + "\n"
-    ticket += dividir_campo(cruces, "Cruces: ") + "\n"
-    ticket += f"Fecha: {fecha}\n"
-    if hora_especifica:
-        ticket += f"Hora específica: {hora_especifica}\n"
-    ticket += "=" * 32 + "\n"
-    ticket += "Prod          | Cant | Precio\n"
-    ticket += "-" * 32 + "\n"
-
-    items_agrupados = {}
-    for item in items:
-        grupo = item.get("grupo", "General")
-        items_agrupados.setdefault(grupo, []).append(item)
-
-    for grupo in sorted(items_agrupados.keys(), key=lambda x: (x == "General", x)):
-        ticket += f"Cliente: {grupo.upper()}\n"
-        for item in items_agrupados[grupo]:
-            producto = item["nombre"][:14].ljust(14)
-            cantidad = str(item["cantidad"]).center(6)
-            precio = f"${item['precio']:.2f}".rjust(10)
-            ticket += f"{producto}|{cantidad}|{precio}\n"
-            if item['anotacion']:
-                ticket += dividir_texto(item['anotacion']) + "\n"
-        ticket += "=================================\n"
-
-    ticket += "=" * 32 + "\n"
-    ticket += f"{centrar(f'TOTAL: ${total:.2f}')}\n"
-    ticket += f"{centrar('Gracias por su pedido')}\n"
-    ticket += "=" * 32 + "\n"
-
-    # Contar bebidas del pedido
-    refrescos = {}  # {tipo: cantidad}
-    aguas_frescas = {}  # {sabor_tamaño: cantidad}
     
-    for item in items:
-        nombre = item["nombre"]
-        cantidad = item["cantidad"]
-        anotacion = item.get("anotacion", "") or ""
-        
-        # Refresco directo
-        if nombre == "Refresco":
-            tipo_refresco = anotacion.split(",")[0].strip() if anotacion else "Sin especificar"
-            refrescos[tipo_refresco] = refrescos.get(tipo_refresco, 0) + cantidad
-        
-        # Paquetes con refresco o agua fresca
-        elif nombre in ["Paquete 1", "Paquete 2"]:
-            if "agua fresca" in anotacion.lower():
-                # Es agua fresca en paquete
-                if "agua fresca jamaica" in anotacion.lower():
-                    aguas_frescas["Jamaica (Paquete)"] = aguas_frescas.get("Jamaica (Paquete)", 0) + cantidad
-                elif "agua fresca horchata" in anotacion.lower():
-                    aguas_frescas["Horchata (Paquete)"] = aguas_frescas.get("Horchata (Paquete)", 0) + cantidad
-                else:
-                    aguas_frescas["Sin especificar (Paquete)"] = aguas_frescas.get("Sin especificar (Paquete)", 0) + cantidad
-            else:
-                # Es refresco en paquete
-                for tipo in ["COCA", "FANTA", "MANZA", "SPRITE"]:
-                    if tipo in anotacion:
-                        refrescos[tipo] = refrescos.get(tipo, 0) + cantidad
-                        break
-                else:
-                    # Si no se encontró tipo específico pero no es agua fresca
-                    if anotacion and "agua fresca" not in anotacion.lower():
-                        tipo_refresco = anotacion.split(",")[0].strip()
-                        refrescos[tipo_refresco] = refrescos.get(tipo_refresco, 0) + cantidad
-        
-        # Aguas chicas/grandes
-        elif nombre in ["Agua Chica", "Agua Grande"]:
-            tamaño = "Chica" if nombre == "Agua Chica" else "Grande"
-            if "jamaica" in anotacion.lower():
-                clave = f"Jamaica {tamaño}"
-                aguas_frescas[clave] = aguas_frescas.get(clave, 0) + cantidad
-            elif "horchata" in anotacion.lower():
-                clave = f"Horchata {tamaño}"
-                aguas_frescas[clave] = aguas_frescas.get(clave, 0) + cantidad
-            else:
-                sabor = anotacion.split(",")[0].strip() if anotacion else "Sin especificar"
-                clave = f"{sabor} {tamaño}"
-                aguas_frescas[clave] = aguas_frescas.get(clave, 0) + cantidad
-    
-    # Agregar resumen de bebidas si hay alguna
-    if refrescos or aguas_frescas:
-        if refrescos:
-            ticket += f"{centrar('RESUMEN DE REFRESCOS:')}\n"
-            for tipo, cant in refrescos.items():
-                ticket += f"{centrar(f'{tipo}: {cant}')}\n"
-        
-        if aguas_frescas:
-            ticket += f"{centrar('RESUMEN DE AGUAS FRESCAS:')}\n"
-            for sabor, cant in aguas_frescas.items():
-                ticket += f"{centrar(f'{sabor}: {cant}')}\n"
-        
-        ticket += "=" * 32
+    try:
+        ticket = f"{centrar('TORTAS AHOGADAS')}\n"
+        ticket += f"{centrar('DOÑA SUSY')}\n"
+        ticket += f"{centrar('Geranio #869A')}\n"
+        ticket += f"{centrar('Col.Tulipanes CP:45647')}\n"
+        ticket += f"{centrar('33-3684-4525')}\n"
+        ticket += "=" * 32 + "\n"
+        ticket += dividir_campo(domicilio, "Domicilio: ") + "\n"
+        ticket += dividir_campo(telefono, "Telefono: ") + "\n"
+        ticket += dividir_campo(cruces, "Cruces: ") + "\n"
+        ticket += f"Fecha: {fecha}\n"
+        if hora_especifica:
+            ticket += f"Hora especifica: {hora_especifica}\n"
+        ticket += "=" * 32 + "\n"
+        ticket += "Prod          | Cant | Precio\n"
+        ticket += "-" * 32 + "\n"
 
-    return ticket
+        items_agrupados = {}
+        for item in items:
+            grupo = item.get("grupo", "General")
+            items_agrupados.setdefault(grupo, []).append(item)
+
+        for grupo in sorted(items_agrupados.keys(), key=lambda x: (x == "General", x)):
+            ticket += f"Cliente: {grupo.upper()}\n"
+            for item in items_agrupados[grupo]:
+                producto = item["nombre"][:14].ljust(14)
+                cantidad = str(item["cantidad"]).center(6)
+                precio = f"${item['precio']:.2f}".rjust(10)
+                ticket += f"{producto}|{cantidad}|{precio}\n"
+                if item['anotacion']:
+                    ticket += dividir_texto(item['anotacion']) + "\n"
+            ticket += "=================================\n"
+
+        ticket += "=" * 32 + "\n"
+        ticket += f"{centrar(f'TOTAL: ${total:.2f}')}\n"
+        ticket += f"{centrar('Gracias por su pedido')}\n"
+        ticket += "=" * 32 + "\n"
+
+        # Contar bebidas del pedido
+        refrescos = {}  # {tipo: cantidad}
+        aguas_frescas = {}  # {sabor_tamaño: cantidad}
+        
+        for item in items:
+            nombre = item["nombre"]
+            cantidad = item["cantidad"]
+            anotacion = item.get("anotacion", "") or ""
+            
+            # Refresco directo
+            if nombre == "Refresco":
+                tipo_refresco = anotacion.split(",")[0].strip() if anotacion else "Sin especificar"
+                refrescos[tipo_refresco] = refrescos.get(tipo_refresco, 0) + cantidad
+            
+            # Paquetes con refresco o agua fresca
+            elif nombre in ["Paquete 1", "Paquete 2"]:
+                if "agua fresca" in anotacion.lower():
+                    # Es agua fresca en paquete
+                    if "agua fresca jamaica" in anotacion.lower():
+                        aguas_frescas["Jamaica (Paquete)"] = aguas_frescas.get("Jamaica (Paquete)", 0) + cantidad
+                    elif "agua fresca horchata" in anotacion.lower():
+                        aguas_frescas["Horchata (Paquete)"] = aguas_frescas.get("Horchata (Paquete)", 0) + cantidad
+                    else:
+                        aguas_frescas["Sin especificar (Paquete)"] = aguas_frescas.get("Sin especificar (Paquete)", 0) + cantidad
+                else:
+                    # Es refresco en paquete
+                    for tipo in ["COCA", "FANTA", "MANZA", "SPRITE"]:
+                        if tipo in anotacion:
+                            refrescos[tipo] = refrescos.get(tipo, 0) + cantidad
+                            break
+                    else:
+                        # Si no se encontró tipo específico pero no es agua fresca
+                        if anotacion and "agua fresca" not in anotacion.lower():
+                            tipo_refresco = anotacion.split(",")[0].strip()
+                            refrescos[tipo_refresco] = refrescos.get(tipo_refresco, 0) + cantidad
+            
+            # Aguas chicas/grandes
+            elif nombre in ["Agua Chica", "Agua Grande"]:
+                tamaño = "Chica" if nombre == "Agua Chica" else "Grande"
+                if "jamaica" in anotacion.lower():
+                    clave = f"Jamaica {tamaño}"
+                    aguas_frescas[clave] = aguas_frescas.get(clave, 0) + cantidad
+                elif "horchata" in anotacion.lower():
+                    clave = f"Horchata {tamaño}"
+                    aguas_frescas[clave] = aguas_frescas.get(clave, 0) + cantidad
+                else:
+                    sabor = anotacion.split(",")[0].strip() if anotacion else "Sin especificar"
+                    clave = f"{sabor} {tamaño}"
+                    aguas_frescas[clave] = aguas_frescas.get(clave, 0) + cantidad
+        
+        # Agregar resumen de bebidas si hay alguna
+        if refrescos or aguas_frescas:
+            if refrescos:
+                ticket += f"{centrar('RESUMEN DE REFRESCOS:')}\n"
+                for tipo, cant in refrescos.items():
+                    ticket += f"{centrar(f'{tipo}: {cant}')}\n"
+            
+            if aguas_frescas:
+                ticket += f"{centrar('RESUMEN DE AGUAS FRESCAS:')}\n"
+                for sabor, cant in aguas_frescas.items():
+                    ticket += f"{centrar(f'{sabor}: {cant}')}\n"
+            
+            ticket += "=" * 32
+
+        return ticket
+        
+    except Exception as e:
+        print(f"[ERROR] Error generando ticket: {e}")
+        return f"Error generando ticket: {str(e)}"
+
+# ========== FUNCIONES PARA EVITAR TICKETS DUPLICADOS - CORREGIDAS ==========
+
+def obtener_ultimo_ticket_guardado():
+    """Obtiene la información del último ticket guardado en el historial - MEJORADA"""
+    hoy = date.today().isoformat()
+    archivo = f"historial_{hoy}.txt"
+    
+    if not os.path.exists(archivo):
+        print("[DEBUG] No existe archivo de historial")
+        return None
+    
+    try:
+        with open(archivo, "r", encoding="utf-8") as f:
+            contenido = f.read().strip()
+        
+        if not contenido:
+            print("[DEBUG] Archivo de historial vacio")
+            return None
+            
+        # Dividir por pedidos y tomar el último
+        pedidos = contenido.split("===== PEDIDO - ")[1:]
+        if not pedidos:
+            print("[DEBUG] No se encontraron pedidos en el historial")
+            return None
+            
+        ultimo_pedido = pedidos[-1]
+        lineas = ultimo_pedido.strip().split("\n")
+        
+        print(f"[DEBUG] Procesando ultimo pedido con {len(lineas)} lineas")
+        
+        # Extraer información del último pedido
+        ultimo_ticket = {
+            "domicilio": "",
+            "telefono": "",
+            "cruces": "",
+            "hora_especifica": None,
+            "items": [],
+            "total": 0
+        }
+        
+        grupo_actual = None
+        
+        for i, linea in enumerate(lineas[1:], 1):  # Saltar la primera línea que es la fecha
+            linea = linea.strip()  # Limpiar espacios
+            print(f"[DEBUG] Linea {i}: '{linea}'")
+            
+            if linea.startswith("Domicilio:"):
+                ultimo_ticket["domicilio"] = linea.replace("Domicilio:", "").strip()
+                print(f"[DEBUG] Domicilio extraido: '{ultimo_ticket['domicilio']}'")
+            elif linea.startswith("Teléfono:"):
+                ultimo_ticket["telefono"] = linea.replace("Teléfono:", "").strip()
+                print(f"[DEBUG] Telefono extraido: '{ultimo_ticket['telefono']}'")
+            elif linea.startswith("Cruces:"):
+                ultimo_ticket["cruces"] = linea.replace("Cruces:", "").strip()
+                print(f"[DEBUG] Cruces extraido: '{ultimo_ticket['cruces']}'")
+            elif linea.startswith("Hora Específica:"):
+                hora_str = linea.replace("Hora Específica:", "").strip()
+                ultimo_ticket["hora_especifica"] = hora_str if hora_str else None
+                print(f"[DEBUG] Hora especifica extraida: '{ultimo_ticket['hora_especifica']}'")
+            elif linea.startswith("Cliente:"):
+                grupo_actual = linea.replace("Cliente:", "").strip()
+                print(f"[DEBUG] Grupo extraido: '{grupo_actual}'")
+            elif linea.startswith("  - "):
+                # Extraer información del producto
+                producto_linea = linea.replace("  - ", "").strip()
+                print(f"[DEBUG] Procesando producto: '{producto_linea}'")
+                try:
+                    if "(x" in producto_linea and ") ($" in producto_linea:
+                        # Formato: "Producto (x2) ($50.00)"
+                        nombre = producto_linea.split(" (x")[0].strip()
+                        resto = producto_linea.split(" (x")[1]
+                        cantidad = int(resto.split(") ($")[0])
+                        precio = float(resto.split(") ($")[1].replace(")", ""))
+                    else:
+                        # Formato sin cantidad explícita: "Producto ($25.00)"
+                        nombre = producto_linea.split(" ($")[0].strip()
+                        precio = float(producto_linea.split(" ($")[1].replace(")", ""))
+                        cantidad = 1
+                    
+                    item = {
+                        "nombre": nombre,
+                        "cantidad": cantidad,
+                        "precio": precio,
+                        "grupo": grupo_actual or "General",
+                        "anotacion": None
+                    }
+                    ultimo_ticket["items"].append(item)
+                    print(f"[DEBUG] Item agregado: {item}")
+                except (ValueError, IndexError) as e:
+                    print(f"[ERROR] Error procesando linea de producto: {producto_linea} - {e}")
+                    continue
+            elif linea.startswith("    Nota:") and ultimo_ticket["items"]:
+                # Agregar nota al último item
+                nota = linea.replace("    Nota:", "").strip()
+                if ultimo_ticket["items"][-1]["anotacion"]:
+                    ultimo_ticket["items"][-1]["anotacion"] += " " + nota
+                else:
+                    ultimo_ticket["items"][-1]["anotacion"] = nota
+                print(f"[DEBUG] Nota agregada al ultimo item: '{nota}'")
+            elif linea.startswith("Total:"):
+                total_str = linea.replace("Total:", "").replace("$", "").strip()
+                ultimo_ticket["total"] = float(total_str)
+                print(f"[DEBUG] Total extraido: {ultimo_ticket['total']}")
+        
+        print(f"[DEBUG] Ultimo ticket leido: {len(ultimo_ticket['items'])} productos, Total: ${ultimo_ticket['total']:.2f}")
+        print(f"[DEBUG] Items extraidos: {ultimo_ticket['items']}")
+        return ultimo_ticket
+        
+    except Exception as e:
+        print(f"[ERROR] Error al leer ultimo ticket: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+def tickets_son_iguales(ticket_actual, ultimo_ticket):
+    """Compara si dos tickets son idénticos - VERSION SIMPLIFICADA Y ROBUSTA"""
+    if ultimo_ticket is None:
+        print("[DEBUG] No hay ticket anterior para comparar")
+        return False
+    
+    print("[DEBUG] === COMPARANDO TICKETS ===")
+    
+    # 1. Comparar datos básicos del cliente
+    print(f"[DEBUG] Comparando domicilio: '{ticket_actual['domicilio']}' vs '{ultimo_ticket['domicilio']}'")
+    if ticket_actual["domicilio"].strip() != ultimo_ticket["domicilio"].strip():
+        print("[DEBUG] Domicilios diferentes")
+        return False
+        
+    print(f"[DEBUG] Comparando telefono: '{ticket_actual['telefono']}' vs '{ultimo_ticket['telefono']}'")
+    if ticket_actual["telefono"].strip() != ultimo_ticket["telefono"].strip():
+        print("[DEBUG] Telefonos diferentes")
+        return False
+        
+    print(f"[DEBUG] Comparando cruces: '{ticket_actual['cruces']}' vs '{ultimo_ticket['cruces']}'")
+    if ticket_actual["cruces"].strip() != ultimo_ticket["cruces"].strip():
+        print("[DEBUG] Cruces diferentes")
+        return False
+    
+    # 2. Comparar total
+    print(f"[DEBUG] Comparando total: {ticket_actual['total']} vs {ultimo_ticket['total']}")
+    if abs(ticket_actual["total"] - ultimo_ticket["total"]) > 0.01:
+        print("[DEBUG] Totales diferentes")
+        return False
+    
+    # 3. Comparar cantidad de productos
+    print(f"[DEBUG] Comparando cantidad productos: {len(ticket_actual['items'])} vs {len(ultimo_ticket['items'])}")
+    if len(ticket_actual["items"]) != len(ultimo_ticket["items"]):
+        print("[DEBUG] Cantidad de productos diferente")
+        return False
+    
+    # 4. Comparar productos de forma simple
+    print("[DEBUG] Comparando productos...")
+    
+    # Crear listas simples para comparar
+    productos_actual = []
+    productos_ultimo = []
+    
+    for item in ticket_actual["items"]:
+        producto_str = f"{item['nombre']}|{item['cantidad']}|{item['precio']:.2f}|{item.get('grupo', 'General')}|{item.get('anotacion', '') or ''}"
+        productos_actual.append(producto_str)
+        print(f"[DEBUG] Producto actual: {producto_str}")
+    
+    for item in ultimo_ticket["items"]:
+        producto_str = f"{item['nombre']}|{item['cantidad']}|{item['precio']:.2f}|{item.get('grupo', 'General')}|{item.get('anotacion', '') or ''}"
+        productos_ultimo.append(producto_str)
+        print(f"[DEBUG] Producto ultimo: {producto_str}")
+    
+    # Ordenar ambas listas para comparar
+    productos_actual.sort()
+    productos_ultimo.sort()
+    
+    print(f"[DEBUG] Productos actual ordenados: {productos_actual}")
+    print(f"[DEBUG] Productos ultimo ordenados: {productos_ultimo}")
+    
+    if productos_actual != productos_ultimo:
+        print("[DEBUG] Productos diferentes")
+        return False
+    
+    print("[SUCCESS] *** TICKETS IDENTICOS DETECTADOS ***")
+    return True
+
+def debug_comparacion_tickets(ticket_actual, ultimo_ticket):
+    """Función de debug para ver las diferencias entre tickets"""
+    print("\n" + "="*50)
+    print("[DEBUG] COMPARACION DE TICKETS")
+    print("="*50)
+    
+    if ultimo_ticket is None:
+        print("[ERROR] No hay ticket anterior para comparar")
+        return
+    
+    print("[TICKET ACTUAL]:")
+    print(f"   Domicilio: '{ticket_actual['domicilio']}'")
+    print(f"   Telefono: '{ticket_actual['telefono']}'")
+    print(f"   Cruces: '{ticket_actual['cruces']}'")
+    print(f"   Hora especifica: '{ticket_actual['hora_especifica']}'")
+    print(f"   Total: {ticket_actual['total']}")
+    print(f"   Productos: {len(ticket_actual['items'])}")
+    
+    print("\n[ULTIMO TICKET GUARDADO]:")
+    print(f"   Domicilio: '{ultimo_ticket['domicilio']}'")
+    print(f"   Telefono: '{ultimo_ticket['telefono']}'")
+    print(f"   Cruces: '{ultimo_ticket['cruces']}'")
+    print(f"   Hora especifica: '{ultimo_ticket['hora_especifica']}'")
+    print(f"   Total: {ultimo_ticket['total']}")
+    print(f"   Productos: {len(ultimo_ticket['items'])}")
+    
+    # Comparar productos detalladamente
+    print("\n[COMPARACION DE PRODUCTOS]:")
+    
+    if len(ticket_actual["items"]) != len(ultimo_ticket["items"]):
+        print(f"   [DIFERENTE] Cantidad productos: {len(ticket_actual['items'])} vs {len(ultimo_ticket['items'])}")
+        return
+    
+    def ordenar_key(x):
+        return (x["nombre"], x["grupo"] or "General", x["anotacion"] or "", x["cantidad"])
+    
+    items_actual = sorted(ticket_actual["items"], key=ordenar_key)
+    items_ultimo = sorted(ultimo_ticket["items"], key=ordenar_key)
+    
+    productos_iguales = True
+    for i, (item_actual, item_ultimo) in enumerate(zip(items_actual, items_ultimo)):
+        print(f"\n   Producto {i+1}:")
+        print(f"     ACTUAL:  {item_actual}")
+        print(f"     ULTIMO:  {item_ultimo}")
+        
+        # Normalizar anotaciones para comparación
+        anotacion_actual = (item_actual["anotacion"] or "").strip()
+        anotacion_ultimo = (item_ultimo["anotacion"] or "").strip()
+        
+        if (item_actual["nombre"].strip() != item_ultimo["nombre"].strip() or
+            item_actual["cantidad"] != item_ultimo["cantidad"] or
+            abs(item_actual["precio"] - item_ultimo["precio"]) > 0.01 or
+            (item_actual["grupo"] or "General") != (item_ultimo["grupo"] or "General") or
+            anotacion_actual != anotacion_ultimo):
+            print("     [DIFERENTES]")
+            productos_iguales = False
+        else:
+            print("     [IGUALES]")
+    
+    print(f"\n[RESULTADO FINAL]: {'TICKETS IDENTICOS' if productos_iguales else 'TICKETS DIFERENTES'}")
+    print("="*50 + "\n")
 
 def imprimir_ticket():
-    domicilio = entry_domicilio.get()
-    telefono = entry_telefono.get()
-    cruces = entry_cruces.get()
+    """Función CORREGIDA para imprimir ticket con detección anti-duplicados robusta"""
+    try:
+        print("[PRINT] === INICIANDO PROCESO DE IMPRESION ===")
+        
+        # 1. VALIDAR DATOS BÁSICOS
+        domicilio = entry_domicilio.get().strip()
+        telefono = entry_telefono.get().strip()
+        cruces = entry_cruces.get().strip()
 
-    if not domicilio or not telefono or not cruces:
-        messagebox.showwarning("Faltan datos", "Debes llenar domicilio, teléfono y cruces.")
-        return
+        if not domicilio or not telefono or not cruces:
+            messagebox.showwarning("Faltan datos", "Debes llenar domicilio, teléfono y cruces.")
+            return
 
-    fecha_hora = datetime.now().strftime("%Y-%m-%d %H:%M")
-    total = sum(item['precio'] for item in pedido_actual)
+        # 2. VALIDAR QUE HAY PRODUCTOS
+        if not pedido_actual:
+            messagebox.showwarning("Sin productos", "Agrega al menos un producto antes de imprimir.")
+            return
 
-    items_copy = copy.deepcopy(pedido_actual)
+        print(f"[PRINT] Datos del cliente: Domicilio='{domicilio}', Telefono='{telefono}', Cruces='{cruces}'")
+        print(f"[PRINT] Productos en pedido: {len(pedido_actual)}")
 
-    guardar_actualizar_cliente(telefono, domicilio, cruces)
+        # 3. GENERAR DATOS DEL TICKET
+        fecha_hora = datetime.now().strftime("%Y-%m-%d %H:%M")
+        total = sum(item['precio'] for item in pedido_actual)
+        items_copy = copy.deepcopy(pedido_actual)
 
-    guardar_en_historial(fecha_hora, domicilio, total)
+        print(f"[PRINT] Total calculado: ${total:.2f}")
 
-    ticket = imprimir_ticket_personalizado(fecha_hora, domicilio, telefono, cruces, total, items_copy)
+        # 4. PREPARAR DATOS PARA COMPARACIÓN ANTI-DUPLICADOS
+        ticket_actual = {
+            "domicilio": domicilio,
+            "telefono": telefono,
+            "cruces": cruces,
+            "hora_especifica": hora_especifica.strip() if hora_especifica else None,
+            "items": items_copy,
+            "total": total
+        }
 
-    imprimir_texto(ticket, "Ticket")
+        print(f"[PRINT] Ticket actual preparado: {ticket_actual}")
+
+        # 5. VERIFICAR DUPLICADOS
+        print("[PRINT] === VERIFICANDO DUPLICADOS ===")
+        ultimo_ticket = obtener_ultimo_ticket_guardado()
+        
+        if ultimo_ticket:
+            print("[PRINT] Se encontro un ticket previo, comparando...")
+            es_duplicado = tickets_son_iguales(ticket_actual, ultimo_ticket)
+        else:
+            print("[PRINT] No hay tickets previos, este sera el primero")
+            es_duplicado = False
+
+        # 6. GUARDAR CLIENTE (SIEMPRE)
+        print("[PRINT] Guardando datos del cliente...")
+        guardar_actualizar_cliente(telefono, domicilio, cruces)
+
+        # 7. MANEJAR DUPLICADOS
+        if es_duplicado:
+            print("[WARNING] *** TICKET DUPLICADO DETECTADO ***")
+            respuesta = messagebox.askyesno(
+                "Ticket Duplicado Detectado", 
+                "Este ticket es identico al anterior.\n\n¿Deseas imprimir de todas formas?\n\n(No se guardara en el historial)",
+                icon="warning"
+            )
+            if not respuesta:
+                print("[CANCEL] Usuario cancelo la impresion del duplicado")
+                return
+            else:
+                print("[PRINT] Usuario confirmo imprimir duplicado")
+        else:
+            print("[PRINT] Ticket nuevo, guardando en historial...")
+            guardar_en_historial(fecha_hora, domicilio, total)
+            print("[SUCCESS] Ticket guardado en historial")
+
+        # 8. GENERAR TICKET PARA IMPRESIÓN
+        print("[PRINT] Generando contenido del ticket...")
+        ticket_contenido = imprimir_ticket_personalizado(fecha_hora, domicilio, telefono, cruces, total, items_copy)
+        
+        if "Error generando ticket" in ticket_contenido:
+            messagebox.showerror("Error", "No se pudo generar el contenido del ticket.")
+            return
+
+        # 9. IMPRIMIR TICKET
+        print("[PRINT] Enviando a impresora...")
+        resultado_impresion = imprimir_texto(ticket_contenido, "Ticket")
+        
+        if resultado_impresion:
+            print("[SUCCESS] === IMPRESION COMPLETADA EXITOSAMENTE ===")
+        else:
+            print("[ERROR] === ERROR EN LA IMPRESION ===")
+
+    except Exception as e:
+        error_msg = f"Error inesperado en imprimir_ticket: {str(e)}"
+        print(f"[ERROR] {error_msg}")
+        import traceback
+        traceback.print_exc()
+        messagebox.showerror("Error", error_msg)
+
+# ========== FIN FUNCIONES ANTI-DUPLICADOS CORREGIDAS ==========
 
 def imprimir_ticket_directo(ticket_texto):
     imprimir_texto(ticket_texto, "Ticket")
