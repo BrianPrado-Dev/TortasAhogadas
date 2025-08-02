@@ -225,10 +225,7 @@ El sistema cuenta con una funcionalidad avanzada de gestión de clientes:
 
 - [ ] 🌐 Versión web para acceso remoto
 - [ ] 📱 App móvil para pedidos
-- [ ] 💰 Integración con sistemas de pago
-- [ ] 📈 Dashboard de analytics avanzado
 - [ ] 🔄 Sincronización en la nube
-- [ ] 📧 Notificaciones por email/SMS
 
 ---
 
