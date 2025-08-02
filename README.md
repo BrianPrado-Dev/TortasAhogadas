@@ -1,4 +1,4 @@
-# 🌮 Tortas Ahogadas Doña Susy - Sistema de Pedidos
+# 🌮 Tortas Ahogadas Doña Susy
 
 <div align="center">
 
