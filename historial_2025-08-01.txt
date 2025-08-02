@@ -1,0 +1,34 @@
+===== PEDIDO - 2025-08-01 22:52 =====
+Fecha y Hora: 2025-08-01 22:52
+Domicilio: Geranio 888
+Teléfono: 2222
+Cruces: clavel y nardo
+Hora Específica: 11am
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Torta (x1) ($55.00)
+  - Refresco (x1) ($25.00)
+    Nota: COCA
+  - Paquete 1 (x1) ($80.00)
+    Nota: COCA
+
+Total: $175.00
+===================================
+
+===== PEDIDO - 2025-08-01 22:53 =====
+Fecha y Hora: 2025-08-01 22:53
+Domicilio: pedro moreno 550
+Teléfono: 4444
+Cruces: clavel y orquidea
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Refresco (x1) ($25.00)
+    Nota: COCA
+
+Total: $40.00
+===================================
+
