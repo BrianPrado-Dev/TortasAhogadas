@@ -122,7 +122,7 @@ pip install pywin32
 
 - ✅ Revisa el resumen del pedido
 - 🖨️ Presiona "Imprimir Ticket"
-- 📋 Entrega el ticket al cliente
+- 📋 Usa el ticket como lo veas conveniente 
 
 ---
 
