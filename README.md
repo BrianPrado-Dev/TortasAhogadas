@@ -261,6 +261,6 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 
 **⭐ Si te gusta este proyecto, no olvides darle una estrella ⭐**
 
-*Hecho con ❤️ para la comunidad de restaurantes mexicanos*
+*Programa creado para un restaurante familiar, pero libre de su uso para la comunidad ❤️ *
 
 </div>
