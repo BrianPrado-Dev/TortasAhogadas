@@ -7,7 +7,7 @@
 ![SQLite](https://img.shields.io/badge/Database-SQLite-orange.svg)
 ![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)
 
-*Sistema completo de gestión de pedidos para el negocio de comida mexicana*
+*Sistema completo de gestión de pedidos para un Restaurante de Tortas Ahogadas*
 
 </div>
 
