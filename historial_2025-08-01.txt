@@ -32,3 +32,33 @@ Cliente: GENERAL
 Total: $40.00
 ===================================
 
+===== PEDIDO - 2025-08-01 23:20 =====
+Fecha y Hora: 2025-08-01 23:20
+Domicilio: pedro moreno 550
+Teléfono: 4444
+Cruces: clavel y orquidea
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Refresco (x1) ($25.00)
+    Nota: COCA
+
+Total: $40.00
+===================================
+
+===== PEDIDO - 2025-08-01 23:21 =====
+Fecha y Hora: 2025-08-01 23:21
+Domicilio: pedro moreno 550
+Teléfono: 4444
+Cruces: clavel y orquidea
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Refresco (x1) ($25.00)
+    Nota: COCA
+
+Total: $40.00
+===================================
+
