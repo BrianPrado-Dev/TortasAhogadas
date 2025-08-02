@@ -1,5 +1,7 @@
-#     🌮 Tortas Ahogadas Doña Susy
+<div align="center">
 
+# 🌮 Tortas Ahogadas Doña Susy
+</div>
 <div align="center">
 
 ![Python](https://img.shields.io/badge/Python-3.6+-blue.svg)
