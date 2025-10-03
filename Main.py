@@ -538,13 +538,48 @@ def agregar_producto_paquete_agua(nombre, sabor_agua):
 
     ventana_item = tk.Toplevel(ventana)
     ventana_item.title(f"Agregar {nombre}")
-    ventana_item.geometry("400x280")
+    ventana_item.geometry("400x320")
     ventana_item.configure(bg="#e6d2a1")
 
-    tk.Label(ventana_item, text="Cantidad:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=8)
-    cantidad_entry = tk.Entry(ventana_item, font=("Roboto", 12), width=20)
+    # --- INICIO: Widget de cantidad modificado ---
+    tk.Label(ventana_item, text="Cantidad:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=(10, 2))
+    
+    frame_cantidad = tk.Frame(ventana_item, bg="#e6d2a1")
+    frame_cantidad.pack(pady=5)
+
+    font_widgets = ("Roboto", 16, "bold")
+
+    cantidad_entry = tk.Entry(frame_cantidad, font=font_widgets, width=5, justify='center')
     cantidad_entry.insert(0, "1")
-    cantidad_entry.pack(pady=8)
+
+    def decrementar_cantidad():
+        try:
+            valor_actual = int(cantidad_entry.get())
+            if valor_actual > 1:
+                cantidad_entry.delete(0, tk.END)
+                cantidad_entry.insert(0, str(valor_actual - 1))
+        except ValueError:
+            cantidad_entry.delete(0, tk.END)
+            cantidad_entry.insert(0, "1")
+
+    def incrementar_cantidad():
+        try:
+            valor_actual = int(cantidad_entry.get())
+            cantidad_entry.delete(0, tk.END)
+            cantidad_entry.insert(0, str(valor_actual + 1))
+        except ValueError:
+            cantidad_entry.delete(0, tk.END)
+            cantidad_entry.insert(0, "1")
+
+    btn_menos = tk.Button(frame_cantidad, text="-", font=font_widgets, command=decrementar_cantidad,
+                          bg="#d32f2f", fg="white", relief="flat")
+    btn_mas = tk.Button(frame_cantidad, text="+", font=font_widgets, command=incrementar_cantidad,
+                        bg="#4CAF50", fg="white", relief="flat")
+
+    btn_menos.pack(side=tk.LEFT, padx=10)
+    cantidad_entry.pack(side=tk.LEFT, padx=5)
+    btn_mas.pack(side=tk.LEFT, padx=10)
+    # --- FIN: Widget de cantidad modificado ---
 
     tk.Label(ventana_item, text="Nota:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=8)
     nota_entry = tk.Entry(ventana_item, font=("Roboto", 12), width=30)
@@ -833,13 +868,49 @@ def agregar_producto(nombre, sabor=None):
 
     ventana_item = tk.Toplevel(ventana)
     ventana_item.title(f"Agregar {nombre}")
-    ventana_item.geometry("400x280")
+    ventana_item.geometry("400x320")
     ventana_item.configure(bg="#e6d2a1")
 
-    tk.Label(ventana_item, text="Cantidad:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=8)
-    cantidad_entry = tk.Entry(ventana_item, font=("Roboto", 12), width=20)
+    # --- INICIO: Widget de cantidad modificado ---
+    tk.Label(ventana_item, text="Cantidad:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=(10, 2))
+    
+    frame_cantidad = tk.Frame(ventana_item, bg="#e6d2a1")
+    frame_cantidad.pack(pady=5)
+
+    font_widgets = ("Roboto", 16, "bold")
+
+    cantidad_entry = tk.Entry(frame_cantidad, font=font_widgets, width=5, justify='center')
     cantidad_entry.insert(0, "1")
-    cantidad_entry.pack(pady=8)
+
+    def decrementar_cantidad():
+        try:
+            valor_actual = int(cantidad_entry.get())
+            if valor_actual > 1:
+                cantidad_entry.delete(0, tk.END)
+                cantidad_entry.insert(0, str(valor_actual - 1))
+        except ValueError:
+            cantidad_entry.delete(0, tk.END)
+            cantidad_entry.insert(0, "1")
+
+    def incrementar_cantidad():
+        try:
+            valor_actual = int(cantidad_entry.get())
+            cantidad_entry.delete(0, tk.END)
+            cantidad_entry.insert(0, str(valor_actual + 1))
+        except ValueError:
+            cantidad_entry.delete(0, tk.END)
+            cantidad_entry.insert(0, "1")
+
+    btn_menos = tk.Button(frame_cantidad, text="-", font=font_widgets, command=decrementar_cantidad,
+                          bg="#d32f2f", fg="white", relief="flat")
+    btn_mas = tk.Button(frame_cantidad, text="+", font=font_widgets, command=incrementar_cantidad,
+                        bg="#4CAF50", fg="white", relief="flat")
+
+    btn_menos.pack(side=tk.LEFT, padx=10)
+    cantidad_entry.pack(side=tk.LEFT, padx=5)
+    btn_mas.pack(side=tk.LEFT, padx=10)
+    # --- FIN: Widget de cantidad modificado ---
+
 
     tk.Label(ventana_item, text="Nota:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=8)
     nota_entry = tk.Entry(ventana_item, font=("Roboto", 12), width=30)
