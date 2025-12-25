@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import simpledialog, messagebox
 import os
+import sys  # <--- IMPORTANTE: Necesario para que PyInstaller encuentre las imágenes
 from datetime import datetime, date
 import win32print
 import win32ui
@@ -40,15 +41,29 @@ def configurar_consola():
     except Exception as e:
         print(f"[WARNING] No se pudo configurar la consola: {e}")
 
-# FUNCION PARA CARGAR IMAGENES
+# --- NUEVA FUNCIÓN PARA RESOLVER RUTAS EN EL .EXE ---
+def resolver_ruta(ruta_relativa):
+    """Obtiene la ruta absoluta al recurso, funciona para desarrollo y para PyInstaller"""
+    try:
+        # PyInstaller crea una carpeta temporal y guarda la ruta en _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, ruta_relativa)
+
+# FUNCION PARA CARGAR IMAGENES (MODIFICADA)
 def cargar_icono(ruta_archivo, size=(100, 100)):
     """Carga una imagen, la redimensiona y la convierte para Tkinter"""
     try:
-        if not os.path.exists(ruta_archivo):
-            print(f"[IMG] No se encontró: {ruta_archivo}")
+        # Usamos resolver_ruta para encontrar el archivo real (ya sea en carpeta o dentro del exe)
+        ruta_real = resolver_ruta(ruta_archivo)
+        
+        if not os.path.exists(ruta_real):
+            print(f"[IMG] No se encontró: {ruta_real}")
             return None
         
-        img_original = Image.open(ruta_archivo)
+        img_original = Image.open(ruta_real)
         # Redimensionar usando LANCZOS (mejor calidad)
         img_resized = img_original.resize(size, Image.Resampling.LANCZOS)
         return ImageTk.PhotoImage(img_resized)
@@ -929,7 +944,6 @@ def imprimir_ticket_personalizado(fecha, domicilio, telefono, cruces, total, ite
                 tipo_refresco = anotacion.split(",")[0].strip() if anotacion else "Sin especificar"
                 refrescos[tipo_refresco] = refrescos.get(tipo_refresco, 0) + cantidad
             elif nombre in ["Paquete 1", "Paquete 2"]:
-                # CORREGIDO: Mapeo de agua de paquete a "Chica"
                 if "agua fresca" in anotacion.lower() or "Agua:" in anotacion:
                     if "jamaica" in anotacion.lower(): aguas_frescas["Jamaica Chica"] = aguas_frescas.get("Jamaica Chica", 0) + cantidad
                     elif "horchata" in anotacion.lower(): aguas_frescas["Horchata Chica"] = aguas_frescas.get("Horchata Chica", 0) + cantidad
@@ -1687,25 +1701,29 @@ frame_acciones.rowconfigure(0, weight=1)
 frame_acciones.rowconfigure(1, weight=1)
 
 # Botón 1: Agregar Cliente
-btn_agregar_cliente = tk.Button(frame_acciones, text="Agregar Cliente", command=crear_grupo, bg="#4caf50", fg="white", font=("Roboto", 11, "bold"), relief="flat")
+btn_agregar_cliente = tk.Button(frame_acciones, text="Agregar Cliente", command=crear_grupo, 
+                                bg="#4caf50", fg="white", font=("Roboto", 11, "bold"), relief="flat")
 btn_agregar_cliente.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
 btn_agregar_cliente.bind("<Enter>", lambda e: btn_agregar_cliente.config(bg="#388e3c"))
 btn_agregar_cliente.bind("<Leave>", lambda e: btn_agregar_cliente.config(bg="#4caf50"))
 
 # Botón 2: Imprimir Ticket
-btn_imprimir_ticket = tk.Button(frame_acciones, text="Imprimir Ticket", command=imprimir_ticket, bg="#4caf50", fg="white", font=("Roboto", 11, "bold"), relief="flat")
+btn_imprimir_ticket = tk.Button(frame_acciones, text="Imprimir Ticket", command=imprimir_ticket, 
+                                bg="#4caf50", fg="white", font=("Roboto", 11, "bold"), relief="flat")
 btn_imprimir_ticket.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
 btn_imprimir_ticket.bind("<Enter>", lambda e: btn_imprimir_ticket.config(bg="#388e3c"))
 btn_imprimir_ticket.bind("<Leave>", lambda e: btn_imprimir_ticket.config(bg="#4caf50"))
 
 # Botón 3: Limpiar Pedido
-btn_limpiar_pedido = tk.Button(frame_acciones, text="Limpiar Pedido", command=limpiar_pedido, bg="#d32f2f", fg="white", font=("Roboto", 11, "bold"), relief="flat")
+btn_limpiar_pedido = tk.Button(frame_acciones, text="Limpiar Pedido", command=limpiar_pedido, 
+                               bg="#d32f2f", fg="white", font=("Roboto", 11, "bold"), relief="flat")
 btn_limpiar_pedido.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
 btn_limpiar_pedido.bind("<Enter>", lambda e: btn_limpiar_pedido.config(bg="#b71c1c"))
 btn_limpiar_pedido.bind("<Leave>", lambda e: btn_limpiar_pedido.config(bg="#d32f2f"))
 
 # Botón 4: Lista de Pedidos
-btn_lista = tk.Button(frame_acciones, text="Lista de Pedidos", command=mostrar_lista_pedidos, bg="#0288d1", fg="white", font=("Roboto", 11, "bold"), relief="flat")
+btn_lista = tk.Button(frame_acciones, text="Lista de Pedidos", command=mostrar_lista_pedidos, 
+                      bg="#0288d1", fg="white", font=("Roboto", 11, "bold"), relief="flat")
 btn_lista.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
 btn_lista.bind("<Enter>", lambda e: btn_lista.config(bg="#01579b"))
 btn_lista.bind("<Leave>", lambda e: btn_lista.config(bg="#0288d1"))
