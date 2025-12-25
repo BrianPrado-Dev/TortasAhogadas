@@ -1,0 +1,18 @@
+===== PEDIDO - 2025-12-24 23:10 =====
+Fecha y Hora: 2025-12-24 23:10
+Domicilio: 222
+Cruces: 2222
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Paquete 1 (x1) ($80.00)
+    Nota: Agua: Jamaica,
+          Torta(Mixta), Tacos(Frijol)
+  - Paquete 1 (x1) ($80.00)
+    Nota: Refresco: COCA,
+          Torta(Carne), Tacos(Papa)
+
+Total: $175.00
+===================================
+

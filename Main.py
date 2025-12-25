@@ -491,7 +491,8 @@ def mostrar_ventana_bebida_paquete(nombre_paquete, seleccion_carne, seleccion_ta
     btn_refresco.bind("<Enter>", lambda e: btn_refresco.config(bg="#1976d2"))
     btn_refresco.bind("<Leave>", lambda e: btn_refresco.config(bg="#2196f3"))
 
-    btn_agua = tk.Button(frame_btn_bebidas, text="AGUA FRESCA\n(+$5)", font=("Roboto", 12, "bold"),
+    # MODIFICADO: Se quitó el texto "(+$5)"
+    btn_agua = tk.Button(frame_btn_bebidas, text="AGUA FRESCA", font=("Roboto", 12, "bold"),
                         bg="#4caf50", fg="white", relief="flat", activebackground="#388e3c",
                         command=lambda: [ventana_sabores.destroy(), seleccionar_agua_paquete(nombre_paquete, seleccion_carne, seleccion_taco)])
     btn_agua.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
@@ -533,8 +534,8 @@ def agregar_producto_paquete_agua(nombre, sabor_agua):
             "cantidad": 1
         })
 
-    # El precio base + $5 por agua fresca
-    precio_base = menu_productos[nombre] + 5
+    # MODIFICADO: Se eliminó el cargo extra de $5. Ahora es el precio base.
+    precio_base = menu_productos[nombre]
 
     ventana_item = tk.Toplevel(ventana)
     ventana_item.title(f"Agregar {nombre}")
@@ -1212,12 +1213,13 @@ def imprimir_ticket_personalizado(fecha, domicilio, telefono, cruces, total, ite
             
             elif nombre in ["Paquete 1", "Paquete 2"]:
                 if "agua fresca" in anotacion.lower() or "Agua:" in anotacion:
+                    # MODIFICADO: Se cambia la etiqueta para que salga "Chica"
                     if "jamaica" in anotacion.lower():
-                        aguas_frescas["Jamaica (Paquete)"] = aguas_frescas.get("Jamaica (Paquete)", 0) + cantidad
+                        aguas_frescas["Jamaica Chica"] = aguas_frescas.get("Jamaica Chica", 0) + cantidad
                     elif "horchata" in anotacion.lower():
-                        aguas_frescas["Horchata (Paquete)"] = aguas_frescas.get("Horchata (Paquete)", 0) + cantidad
+                        aguas_frescas["Horchata Chica"] = aguas_frescas.get("Horchata Chica", 0) + cantidad
                     else:
-                        aguas_frescas["Sin especificar (Paquete)"] = aguas_frescas.get("Sin especificar (Paquete)", 0) + cantidad
+                        aguas_frescas["Agua Fresca Chica"] = aguas_frescas.get("Agua Fresca Chica", 0) + cantidad
                 else:
                     for tipo in ["COCA", "FANTA", "MANZA", "SPRITE"]:
                         if tipo in anotacion:
@@ -1585,12 +1587,13 @@ def mostrar_resumen_dia():
                 
                 elif nombre in ["Paquete 1", "Paquete 2"]:
                     if "agua fresca" in anotacion.lower():
-                        if "agua fresca jamaica" in anotacion.lower():
-                            aguas_detalle["Jamaica (Paquete)"] = aguas_detalle.get("Jamaica (Paquete)", 0) + cantidad
-                        elif "agua fresca horchata" in anotacion.lower():
-                            aguas_detalle["Horchata (Paquete)"] = aguas_detalle.get("Horchata (Paquete)", 0) + cantidad
+                        # MODIFICADO: Mismo cambio que en el ticket para consistencia
+                        if "agua fresca jamaica" in anotacion.lower() or "jamaica" in anotacion.lower():
+                            aguas_detalle["Jamaica Chica"] = aguas_detalle.get("Jamaica Chica", 0) + cantidad
+                        elif "agua fresca horchata" in anotacion.lower() or "horchata" in anotacion.lower():
+                            aguas_detalle["Horchata Chica"] = aguas_detalle.get("Horchata Chica", 0) + cantidad
                         else:
-                            aguas_detalle["Sin especificar (Paquete)"] = aguas_detalle.get("Sin especificar (Paquete)", 0) + cantidad
+                            aguas_detalle["Agua Fresca Chica"] = aguas_detalle.get("Agua Fresca Chica", 0) + cantidad
                     else:
                         for tipo in ["COCA", "FANTA", "MANZA", "SPRITE"]:
                             if tipo in anotacion:
