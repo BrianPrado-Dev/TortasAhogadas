@@ -1,0 +1,65 @@
+===== PEDIDO - 2026-01-15 23:19 =====
+N. Pedido: 01
+Fecha y Hora: 2026-01-15 23:19
+Domicilio: 222
+Cruces: 222
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Paquete 2 (x1) ($90.00)
+    Nota: Refresco: COCA LIGHT,
+          Torta(Mixta), Tacos(Requeson)
+  - Paquete 1 (x1) ($85.00)
+    Nota: Refresco: COCA LIGHT,
+          Torta(Buche), Tacos(Frijol)
+
+Total: $190.00
+===================================
+
+===== PEDIDO - 2026-01-15 23:32 =====
+N. Pedido: 02
+Fecha: 2026-01-15 23:32
+Domicilio: 222
+Cruces: 222
+--- Productos ---
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Refresco (x1) ($28.00)
+    Nota: FANTA
+
+Total: $43.00
+===================================
+
+===== PEDIDO - 2026-01-15 23:33 =====
+N. Pedido: 03
+Fecha: 2026-01-15 23:33
+Domicilio: prueba
+Tel: 222
+Cruces: 22
+Hora Específica: 9am
+--- Productos ---
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Refresco (x1) ($28.00)
+    Nota: FANTA
+
+Total: $43.00
+===================================
+
+===== PEDIDO - 2026-01-15 23:34 =====
+N. Pedido: 04
+Fecha: 2026-01-15 23:34
+Domicilio: geranio 869
+Tel: 2224433443
+Cruces: clavel y nardo
+Hora Específica: 9am
+--- Productos ---
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Refresco (x1) ($28.00)
+    Nota: FANTA
+
+Total: $43.00
+===================================
+

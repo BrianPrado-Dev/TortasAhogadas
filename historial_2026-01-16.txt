@@ -1,0 +1,18 @@
+===== PEDIDO - 2026-01-16 00:06 =====
+N. Pedido: 01
+Fecha y Hora: 2026-01-16 00:06
+Domicilio: prueba
+Teléfono: 222
+Cruces: 22
+Hora Específica: 2pm
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Paquete 1 (x1) ($85.00)
+    Nota: Refresco: COCA LIGHT,
+          Torta(Mixta), Tacos(Papa)
+
+Total: $100.00
+===================================
+
