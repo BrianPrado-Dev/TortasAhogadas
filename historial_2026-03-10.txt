@@ -1,0 +1,24 @@
+===== PEDIDO - 2026-03-10 21:35 =====
+N. Pedido: 01
+Fecha y Hora: 2026-03-10 21:35
+Domicilio: 222
+Cruces: 222
+Hora Específica: 9pm
+--- Productos ---
+
+Cliente: GENERAL
+  - Envío (x1) ($15.00)
+  - Paquete 2 (x1) ($90.00)
+    Nota: Refresco: MANZA,
+          Torta(Mixta), Tacos(Picadillo)
+  - Torta (x1) ($55.00)
+    Nota: Mixta
+
+Cliente: GENERAL
+  - Paquete 2 (x1) ($90.00)
+    Nota: Refresco: MANZA,
+          Torta(Mixta), Tacos(Picadillo)
+
+Total: $250.00
+===================================
+

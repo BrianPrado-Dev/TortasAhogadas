@@ -1375,174 +1375,304 @@ def mostrar_lista_pedidos():
         return
 
     ventana_lista = tk.Toplevel(ventana)
-    ventana_lista_instance = ventana_lista # Guardar referencia
-    ventana_lista.title("Lista de Pedidos (Optimizado)")
-    
-    # Configuración de tamaño para POS
-    w, h = min(int(screen_width * 0.95), 1200), min(int(screen_height * 0.9), 700)
+    ventana_lista_instance = ventana_lista
+    ventana_lista.title("Lista de Pedidos")
+
+    w, h = min(int(screen_width * 0.95), 1250), min(int(screen_height * 0.9), 760)
     ventana_lista.geometry(f"{w}x{h}")
-    ventana_lista.configure(bg="#f0f0f0")
+    ventana_lista.configure(bg="#f5f0de")
 
-    # Estructura principal
-    frame_main = tk.Frame(ventana_lista, bg="#f0f0f0")
-    frame_main.pack(fill="both", expand=True, padx=5, pady=5)
-    
-    # Dos columnas: Izq (Normal), Der (Hora Específica)
-    col_izq = tk.Frame(frame_main, bg="#e0e0e0", relief="sunken", bd=1)
-    col_izq.pack(side="left", fill="both", expand=True, padx=5)
-    
-    col_der = tk.Frame(frame_main, bg="#ffe0b2", relief="sunken", bd=1)
-    col_der.pack(side="right", fill="both", expand=True, padx=5)
+    header = tk.Frame(ventana_lista, bg="#d32f2f", height=56)
+    header.pack(fill="x")
+    header.pack_propagate(False)
+    tk.Label(header, text="Lista de Pedidos del Día", font=("Roboto", 15, "bold"), bg="#d32f2f", fg="white").pack(side="left", padx=14)
 
-    # Headers
-    tk.Label(col_izq, text="PEDIDOS (NORMAL)", font=("Arial", 14, "bold"), bg="#e0e0e0").pack(pady=5)
-    tk.Label(col_der, text="PEDIDOS (HORA ESP.)", font=("Arial", 14, "bold"), bg="#ffe0b2").pack(pady=5)
+    toolbar = tk.Frame(ventana_lista, bg="#faf2d3", bd=1, relief="solid")
+    toolbar.pack(fill="x", padx=10, pady=(8, 6))
+    lbl_resumen = tk.Label(toolbar, text="", font=("Roboto", 10, "bold"), bg="#faf2d3", fg="#3e2723")
+    lbl_resumen.pack(side="left", padx=10, pady=8)
 
-    # --- FUNCIÓN PARA CREAR AREA DE SCROLL CON BOTONES ---
-    def crear_area_scroll(parent, bg_color):
-        # Botón Arriba
-        btn_up = tk.Button(parent, text="▲ SUBIR ▲", font=("Arial", 12, "bold"), bg="#bdbdbd", 
-                           command=lambda: canvas.yview_scroll(-1, "pages")) # "pages" es más rápido que "units"
-        btn_up.pack(fill="x", pady=2)
-        
-        # Canvas y Frame interno
-        canvas = tk.Canvas(parent, bg=bg_color, highlightthickness=0)
-        canvas.pack(side="top", fill="both", expand=True)
-        
-        frame_int = tk.Frame(canvas, bg=bg_color)
-        win_id = canvas.create_window((0, 0), window=frame_int, anchor="nw")
-        
-        def config_scroll(event):
-            canvas.configure(scrollregion=canvas.bbox("all"))
-            canvas.itemconfig(win_id, width=event.width)
-            
-        frame_int.bind("<Configure>", config_scroll)
-        canvas.bind("<Configure>", lambda e: canvas.itemconfig(win_id, width=e.width))
+    frame_main = tk.Frame(ventana_lista, bg="#f5f0de")
+    frame_main.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
-        # Botón Abajo
-        btn_down = tk.Button(parent, text="▼ BAJAR ▼", font=("Arial", 12, "bold"), bg="#bdbdbd",
-                             command=lambda: canvas.yview_scroll(1, "pages"))
-        btn_down.pack(fill="x", pady=2)
-        
-        return frame_int
+    def crear_columna(parent, titulo, color_titulo, color_fondo):
+        contenedor = tk.Frame(parent, bg="#ffffff", bd=1, relief="solid")
+        tk.Label(contenedor, text=titulo, font=("Roboto", 12, "bold"), bg=color_titulo, fg="white").pack(fill="x")
+        canvas_wrap = tk.Frame(contenedor, bg="#ffffff")
+        canvas_wrap.pack(fill="both", expand=True)
+        canvas = tk.Canvas(canvas_wrap, bg=color_fondo, highlightthickness=0)
+        scrollbar = tk.Scrollbar(canvas_wrap, orient="vertical", command=canvas.yview)
+        interior = tk.Frame(canvas, bg=color_fondo)
+        window_id = canvas.create_window((0, 0), window=interior, anchor="nw")
+        interior.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.bind("<Configure>", lambda e: canvas.itemconfig(window_id, width=e.width))
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        return contenedor, interior
 
-    frame_izq_contenido = crear_area_scroll(col_izq, "#ffffff")
-    frame_der_contenido = crear_area_scroll(col_der, "#fff3e0")
+    col_izq, frame_izq_contenido = crear_columna(frame_main, "Pedidos Sin Hora", "#6d4c41", "#ffffff")
+    col_der, frame_der_contenido = crear_columna(frame_main, "Pedidos Con Hora", "#0288d1", "#fffaf0")
+    col_izq.pack(side="left", fill="both", expand=True, padx=(0, 6))
+    col_der.pack(side="left", fill="both", expand=True, padx=(6, 0))
 
-    # --- FUNCIÓN DE RENDERIZADO (SE LLAMA AL INICIO Y EN UPDATES) ---
-    def cargar_datos():
-        # Limpiar previos
-        for widget in frame_izq_contenido.winfo_children(): widget.destroy()
-        for widget in frame_der_contenido.winfo_children(): widget.destroy()
-        
-        if not os.path.exists(archivo): return
+    def parsear_pedido(lines):
+        data = {
+            "fecha_hora": "",
+            "hora_esp": None,
+            "n_pedido": "??",
+            "domicilio": "Sin Domicilio",
+            "telefono": "",
+            "cruces": "No especificados",
+            "total": 0.0,
+            "items": []
+        }
+        grupo_en_curso = "General"
+        item_en_curso = None
 
-        # Leer archivo
+        if lines:
+            primera = lines[0].replace("-", "", 1).replace("=", "").strip()
+            if primera:
+                data["fecha_hora"] = primera
+
+        for l in lines:
+            if l.startswith("N. Pedido:"):
+                data["n_pedido"] = l.split(":", 1)[1].strip()
+            elif l.startswith("Fecha y Hora:"):
+                data["fecha_hora"] = l.split(":", 1)[1].strip()
+            elif l.startswith("Domicilio:"):
+                data["domicilio"] = l.split(":", 1)[1].strip()
+            elif l.startswith("Teléfono:"):
+                data["telefono"] = l.split(":", 1)[1].strip()
+            elif l.startswith("Cruces:"):
+                data["cruces"] = l.split(":", 1)[1].strip()
+            elif l.startswith("Hora Específica:"):
+                hora = l.split(":", 1)[1].strip()
+                data["hora_esp"] = hora if hora else None
+            elif l.startswith("Total:"):
+                try:
+                    data["total"] = float(l.replace("Total:", "").replace("$", "").strip())
+                except ValueError:
+                    data["total"] = 0.0
+            elif l.startswith("Cliente:"):
+                grupo_en_curso = l.split(":", 1)[1].strip() or "General"
+            elif l.startswith("  - "):
+                contenido = l.replace("  - ", "", 1).strip()
+                nombre = contenido
+                cantidad = 1
+                precio = 0.0
+                if " (x" in contenido and ") ($" in contenido:
+                    nombre = contenido.split(" (x", 1)[0].strip()
+                    try:
+                        cantidad = int(contenido.split(" (x", 1)[1].split(")", 1)[0])
+                    except ValueError:
+                        cantidad = 1
+                    try:
+                        precio = float(contenido.rsplit("($", 1)[1].replace(")", "").strip())
+                    except ValueError:
+                        precio = 0.0
+                item_en_curso = {
+                    "nombre": nombre,
+                    "anotacion": None,
+                    "precio": precio,
+                    "grupo": grupo_en_curso,
+                    "cantidad": cantidad
+                }
+                data["items"].append(item_en_curso)
+            elif l.startswith("    Nota:") and item_en_curso:
+                nota = l.replace("    Nota:", "", 1).strip()
+                item_en_curso["anotacion"] = nota
+            elif l.startswith("          ") and item_en_curso and item_en_curso.get("anotacion"):
+                item_en_curso["anotacion"] += " " + l.strip()
+
+        return data
+
+    def construir_ticket_impresion(p_data):
+        global hora_especifica
+        hora_anterior = hora_especifica
+        try:
+            hora_especifica = p_data["hora_esp"]
+            return imprimir_ticket_personalizado(
+                p_data["fecha_hora"],
+                p_data["domicilio"],
+                p_data["telefono"],
+                p_data["cruces"],
+                p_data["total"],
+                p_data["items"],
+                p_data["n_pedido"]
+            )
+        finally:
+            hora_especifica = hora_anterior
+
+    def texto_items_resumen(items):
+        if not items:
+            return "Sin productos"
+        lineas = []
+        for item in items:
+            linea = f"- {item['nombre']} x{item['cantidad']} (${item['precio']:.2f})"
+            if item.get("anotacion"):
+                linea += f"\n  Nota: {item['anotacion']}"
+            lineas.append(linea)
+        return "\n".join(lineas)
+
+    def borrar_pedido_historial(indice_objetivo):
+        if not os.path.exists(archivo):
+            return False
         with open(archivo, "r", encoding="utf-8") as f:
-            raw = f.read().strip().split("===== PEDIDO")
-        
-        pedidos = []
-        for p in raw[1:]:
-            lines = p.strip().split("\n")
-            data = {"raw_text": p} 
-            hora_esp = None
-            total_val = 0
-            n_pedido = "??"
-            domicilio = "Sin Domicilio"
-            telefono = "S/N"
-            cruces = "No especificados"
-            
-            # Parsing ligero y específico para mostrar datos
-            for l in lines:
-                if l.startswith("Hora Específica:"): hora_esp = l.split(":")[1].strip()
-                if l.startswith("N. Pedido:"): n_pedido = l.split(":")[1].strip()
-                if l.startswith("Domicilio:"): domicilio = l.split(":",1)[1].strip()
-                if l.startswith("Teléfono:"): telefono = l.split(":",1)[1].strip()
-                if l.startswith("Cruces:"): cruces = l.split(":",1)[1].strip()
-                if l.startswith("Total:"): 
-                    try: total_val = float(l.split("$")[1])
-                    except: pass
-            
-            data["hora_esp"] = hora_esp
-            data["n_pedido"] = n_pedido
-            
-            # Construir items de la lista
-            items_text = ""
-            for l in lines:
-                if l.startswith("  - "): 
-                    items_text += l.strip() + "\n"
-                if l.startswith("    Nota:"):
-                    items_text += l.strip() + "\n"
-            
-            data["items_view"] = items_text
-            data["total"] = total_val
-            data["cliente_info"] = {
-                "domicilio": domicilio,
-                "telefono": telefono,
-                "cruces": cruces
-            }
-            
-            # Ticket para imprimir
-            ticket_print = "TORTAS AHOGADAS DOÑA SUSY\n(Reimpresión)\n" + "\n".join(lines[1:]) + "\n\n"
-            data["print_text"] = ticket_print
+            bloques = f.read().split("===== PEDIDO")
+        pedidos_bloques = bloques[1:]
+        if indice_objetivo < 0 or indice_objetivo >= len(pedidos_bloques):
+            return False
+        pedidos_bloques.pop(indice_objetivo)
+        with open(archivo, "w", encoding="utf-8") as f:
+            for bloque in pedidos_bloques:
+                contenido = bloque.strip()
+                if contenido:
+                    f.write(f"===== PEDIDO {contenido}\n\n")
+        return True
 
+    def cargar_pedido_en_principal(p_data):
+        global pedido_actual, grupo_actual, grupos, hora_especifica
+
+        if p_data["telefono"]:
+            var_telefono.set(1)
+            toggle_telefono_entry()
+            entry_telefono.delete(0, tk.END)
+            entry_telefono.insert(0, p_data["telefono"])
+        else:
+            var_telefono.set(0)
+            toggle_telefono_entry()
+
+        entry_cruces.delete(0, tk.END)
+        entry_cruces.insert(0, p_data["cruces"])
+        entry_domicilio.delete(0, tk.END)
+        entry_domicilio.insert(0, p_data["domicilio"])
+
+        if p_data["hora_esp"]:
+            var_hora.set(1)
+            toggle_hora_entry()
+            entry_hora.delete(0, tk.END)
+            entry_hora.insert(0, p_data["hora_esp"])
+            hora_especifica = p_data["hora_esp"]
+        else:
+            var_hora.set(0)
+            toggle_hora_entry()
+            hora_especifica = None
+
+        pedido_actual.clear()
+        pedido_actual.extend(copy.deepcopy(p_data["items"]))
+
+        grupos_detectados = []
+        for item in pedido_actual:
+            g = item.get("grupo", "General")
+            if g not in grupos_detectados:
+                grupos_detectados.append(g)
+        if "General" not in grupos_detectados:
+            grupos_detectados.insert(0, "General")
+        grupos = grupos_detectados
+        grupo_actual = grupos[0] if grupos else "General"
+
+        actualizar_ticket()
+        ventana.deiconify()
+        ventana.lift()
+        ventana.focus_force()
+
+    def editar_pedido_desde_lista(p_data):
+        confirmar = messagebox.askyesno(
+            "Editar Pedido",
+            "Este pedido se quitará del historial y se cargará en la pantalla principal para editarlo.\n\n¿Deseas continuar?",
+            parent=ventana_lista
+        )
+        if not confirmar:
+            return
+        eliminado = borrar_pedido_historial(p_data["source_index"])
+        if not eliminado:
+            messagebox.showerror("Error", "No se pudo editar el pedido seleccionado.", parent=ventana_lista)
+            return
+        cargar_pedido_en_principal(p_data)
+        messagebox.showinfo("Pedido cargado", "Pedido cargado para edición. Realiza cambios e imprime para guardarlo de nuevo.", parent=ventana)
+        on_close()
+
+    def pintar_card(parent, p_data):
+        card = tk.Frame(parent, bg="#ffffff", relief="solid", bd=1)
+        card.pack(fill="x", padx=8, pady=6)
+
+        top = tk.Frame(card, bg="#faf2d3")
+        top.pack(fill="x")
+        tk.Label(top, text=f"Pedido #{p_data['n_pedido']}   Total: ${p_data['total']:.2f}", font=("Roboto", 11, "bold"), bg="#faf2d3", fg="#3e2723").pack(side="left", padx=8, pady=6)
+        hora_texto = p_data["hora_esp"] if p_data["hora_esp"] else "Sin hora"
+        tk.Label(top, text=hora_texto, font=("Roboto", 10, "bold"), bg="#faf2d3", fg="#0288d1").pack(side="right", padx=8)
+
+        tk.Label(card, text=f"Domicilio: {p_data['domicilio']}", font=("Roboto", 11, "bold"), bg="#ffffff", fg="#3e2723", anchor="w", justify="left", wraplength=500).pack(fill="x", padx=8, pady=(6, 0))
+        tk.Label(card, text=f"Tel: {p_data['telefono'] or 'S/N'}   |   Cruces: {p_data['cruces']}", font=("Roboto", 10), bg="#ffffff", fg="#5d4037", anchor="w", justify="left", wraplength=500).pack(fill="x", padx=8, pady=(2, 5))
+        tk.Label(card, text=texto_items_resumen(p_data["items"]), font=("Consolas", 9), bg="#ffffff", fg="#3e2723", anchor="w", justify="left", wraplength=520).pack(fill="x", padx=8, pady=(0, 8))
+
+        botonera = tk.Frame(card, bg="#ffffff")
+        botonera.pack(fill="x", padx=8, pady=(0, 8))
+        btn_imprimir = tk.Button(
+            botonera,
+            text="Imprimir Ticket",
+            font=("Roboto", 10, "bold"),
+            command=lambda: imprimir_ticket_desde_lista(p_data["print_text"], p_data["n_pedido"])
+        )
+        btn_imprimir.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        aplicar_estilo_boton(btn_imprimir, "#4caf50", "#388e3c")
+
+        btn_editar = tk.Button(
+            botonera,
+            text="Editar",
+            font=("Roboto", 10, "bold"),
+            command=lambda: editar_pedido_desde_lista(p_data)
+        )
+        btn_editar.pack(side="left", fill="x", expand=True, padx=(5, 0))
+        aplicar_estilo_boton(btn_editar, "#ff6f00", "#ef6c00")
+
+    def cargar_datos():
+        for widget in frame_izq_contenido.winfo_children():
+            widget.destroy()
+        for widget in frame_der_contenido.winfo_children():
+            widget.destroy()
+
+        if not os.path.exists(archivo):
+            lbl_resumen.config(text="No hay pedidos registrados hoy")
+            return
+
+        with open(archivo, "r", encoding="utf-8") as f:
+            bloques = f.read().strip().split("===== PEDIDO")
+
+        pedidos = []
+        for idx_bloque, bloque in enumerate(bloques[1:]):
+            lines = [line for line in bloque.strip().split("\n") if line.strip()]
+            if not lines:
+                continue
+            data = parsear_pedido(lines)
+            data["print_text"] = construir_ticket_impresion(data)
+            data["source_index"] = idx_bloque
             pedidos.append(data)
 
-        # Separar y Ordenar
         sin_hora = [p for p in pedidos if not p["hora_esp"]]
         con_hora = [p for p in pedidos if p["hora_esp"]]
-        
-        # Invertir orden normal (más recientes arriba)
+
         sin_hora.reverse()
-        # Ordenar con hora por tiempo
         con_hora.sort(key=lambda x: convertir_hora_a_minutos(x["hora_esp"]))
 
-        # Renderizar Tarjetas
-        font_mono = ("Consolas", 10) 
-        
-        def pintar_card(parent, p_data):
-            # Marco Principal
-            card = tk.Frame(parent, bg="white", relief="solid", bd=2)
-            card.pack(fill="x", pady=5, padx=5)
-            
-            # --- SECCIÓN SUPERIOR: DATOS CLIENTE ---
-            frame_cliente = tk.Frame(card, bg="#e3f2fd") # Color azul claro para diferenciar
-            frame_cliente.pack(fill="x", padx=2, pady=2)
-            
-            # Domicilio Grande y Negrita
-            tk.Label(frame_cliente, text=f"DOM: {p_data['cliente_info']['domicilio']}", 
-                     font=("Roboto", 14, "bold"), bg="#e3f2fd", fg="black", wraplength=400, justify="left").pack(anchor="w", padx=5)
-            
-            # Teléfono y Cruces
-            info_sec = f"TEL: {p_data['cliente_info']['telefono']}  |  CRUCES: {p_data['cliente_info']['cruces']}"
-            if p_data["hora_esp"]:
-                # --- CORRECCION AQUI: SE USAN COMILLAS SIMPLES ADENTRO ---
-                info_sec += f"\nHORA: {p_data['hora_esp']}"
-            
-            tk.Label(frame_cliente, text=info_sec, font=("Roboto", 10), bg="#e3f2fd", fg="#333", justify="left").pack(anchor="w", padx=5, pady=2)
+        lbl_resumen.config(
+            text=f"Pedidos: {len(pedidos)}   |   Sin hora: {len(sin_hora)}   |   Con hora: {len(con_hora)}"
+        )
 
-            tk.Frame(card, height=1, bg="black").pack(fill="x") # Separador
+        if not sin_hora:
+            tk.Label(frame_izq_contenido, text="Sin pedidos normales", font=("Roboto", 11, "italic"), bg="#ffffff", fg="#6d4c41").pack(pady=12)
+        if not con_hora:
+            tk.Label(frame_der_contenido, text="Sin pedidos con hora", font=("Roboto", 11, "italic"), bg="#fffaf0", fg="#6d4c41").pack(pady=12)
 
-            # --- SECCIÓN MEDIA: ITEMS ---
-            tk.Label(card, text=p_data["items_view"], font=font_mono, justify="left", bg="white", anchor="w").pack(fill="x", padx=5, pady=5)
-            
-            tk.Frame(card, height=1, bg="black").pack(fill="x") # Separador
+        for p in sin_hora:
+            pintar_card(frame_izq_contenido, p)
+        for p in con_hora:
+            pintar_card(frame_der_contenido, p)
 
-            # --- SECCIÓN INFERIOR: TOTAL Y N. PEDIDO ---
-            lbl_total = tk.Label(card, text=f"TOTAL: ${p_data['total']:.2f}", font=("Roboto", 12, "bold"), bg="white", fg="#d32f2f")
-            lbl_total.pack(pady=2)
-            
-            # N. Pedido hasta abajo
-            lbl_npedido = tk.Label(card, text=f"N. PEDIDO: {p_data['n_pedido']}", font=("Roboto", 14, "bold"), bg="white", fg="black")
-            lbl_npedido.pack(pady=5)
-
-            # Botón Imprimir grande
-            btn = tk.Button(card, text="🖨️ IMPRIMIR TICKET", bg="#4caf50", fg="white", font=("Arial", 11, "bold"),
-                            command=lambda: imprimir_ticket_desde_lista(p_data["print_text"], p_data["n_pedido"]))
-            btn.pack(fill="x", padx=5, pady=5)
-
-        for p in sin_hora: pintar_card(frame_izq_contenido, p)
-        for p in con_hora: pintar_card(frame_der_contenido, p)
+    btn_refrescar = tk.Button(toolbar, text="Refrescar", font=("Roboto", 10, "bold"), command=lambda: cargar_datos())
+    btn_refrescar.pack(side="right", padx=10, pady=6)
+    aplicar_estilo_boton(btn_refrescar, "#0288d1", "#01579b")
 
     # Adjuntar función refresh a la instancia para llamarla desde fuera
     ventana_lista.refresh_func = cargar_datos
@@ -1625,6 +1755,33 @@ def mostrar_menu_configuracion():
     btn_resumen = tk.Button(ventana_config, text="Resumen del Día", command=mostrar_resumen_dia, bg="#0288d1", fg="white", font=("Roboto", 11), width=20)
     btn_resumen.pack(pady=5)
 
+def aplicar_estilo_boton(btn, color_base, color_hover, fg="white"):
+    btn.configure(
+        bg=color_base,
+        fg=fg,
+        activebackground=color_hover,
+        activeforeground=fg,
+        relief="flat",
+        bd=0,
+        highlightthickness=0,
+        cursor="hand2",
+        padx=8,
+        pady=6
+    )
+    btn.bind("<Enter>", lambda e, b=btn, c=color_hover: b.config(bg=c))
+    btn.bind("<Leave>", lambda e, b=btn, c=color_base: b.config(bg=c))
+
+def aplicar_estilo_entry(entry):
+    entry.configure(
+        relief="solid",
+        bd=1,
+        bg="#ffffff",
+        highlightthickness=1,
+        highlightbackground="#d7c6a0",
+        highlightcolor="#ff6f00",
+        insertbackground="#3e2723"
+    )
+
 # Inicializar la base de datos al inicio
 inicializar_base_datos()
 
@@ -1640,61 +1797,66 @@ ventana.configure(bg="#e6d2a1")
 ventana.resizable(True, True)
 
 frame_principal = tk.Frame(ventana, bg="#e6d2a1")
-frame_principal.pack(fill="both", expand=True, padx=10, pady=10)
+frame_principal.pack(fill="both", expand=True, padx=14, pady=14)
 frame_principal.grid_columnconfigure(0, weight=3)
 frame_principal.grid_columnconfigure(1, weight=2)
 frame_principal.grid_rowconfigure(0, weight=1)
 
-panel_izquierdo = tk.Frame(frame_principal, bg="#ffffff", bd=1, relief="flat")
+panel_izquierdo = tk.Frame(frame_principal, bg="#ffffff", bd=1, relief="solid")
 panel_izquierdo.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 frame_superior_izq = tk.Frame(panel_izquierdo, bg="#ffffff")
-frame_superior_izq.pack(fill="both", padx=5, pady=5, expand=True)
+frame_superior_izq.pack(fill="both", padx=10, pady=10, expand=True)
 
-tk.Label(frame_superior_izq, text="Tortas Ahogadas Doña Susy", font=("Roboto", 15, "bold"), bg="#ffffff", fg="#d32f2f", pady=5).pack(anchor="w", fill="x")
+tk.Label(frame_superior_izq, text="Tortas Ahogadas Doña Susy", font=("Roboto", 17, "bold"), bg="#ffffff", fg="#d32f2f", pady=2).pack(anchor="w", fill="x")
+tk.Label(frame_superior_izq, text="Captura rápida de pedidos", font=("Roboto", 10), bg="#ffffff", fg="#6d4c41").pack(anchor="w", fill="x", pady=(0, 8))
 
-frame_datos = tk.Frame(frame_superior_izq, bg="#faf2d3", bd=1, relief="flat")
+frame_datos = tk.Frame(frame_superior_izq, bg="#faf2d3", bd=1, relief="solid")
 frame_datos.pack(fill="x", padx=5, pady=5)
 
 label_datos_cliente = tk.Label(frame_datos, text="Datos del Cliente", font=("Roboto", 12, "bold"), bg="#faf2d3", fg="#3e2723")
-label_datos_cliente.pack(anchor="w", padx=10, pady=5)
+label_datos_cliente.pack(anchor="w", padx=10, pady=(8, 6))
 
 frame_domicilio = tk.Frame(frame_datos, bg="#faf2d3")
 frame_domicilio.pack(fill="x", padx=10, pady=3)
-tk.Label(frame_domicilio, text="Domicilio:", bg="#faf2d3", font=("Roboto", 10), fg="#3e2723").pack(side="left")
+tk.Label(frame_domicilio, text="Domicilio:", width=18, anchor="w", bg="#faf2d3", font=("Roboto", 10), fg="#3e2723").pack(side="left")
 entry_domicilio = tk.Entry(frame_domicilio, font=("Roboto", 10), relief="flat", bg="#ffffff", bd=1)
 entry_domicilio.pack(side="left", padx=5, fill="x", expand=True)
+aplicar_estilo_entry(entry_domicilio)
 
 frame_telefono = tk.Frame(frame_datos, bg="#faf2d3")
 frame_telefono.pack(fill="x", padx=10, pady=3)
-tk.Label(frame_telefono, text="Teléfono:", bg="#faf2d3", font=("Roboto", 10), fg="#3e2723").pack(side="left")
+tk.Label(frame_telefono, text="Teléfono:", width=18, anchor="w", bg="#faf2d3", font=("Roboto", 10), fg="#3e2723").pack(side="left")
 var_telefono = tk.IntVar(value=1)
 tk.Radiobutton(frame_telefono, text="Sí", variable=var_telefono, value=1, bg="#faf2d3", font=("Roboto", 10), fg="#3e2723", command=toggle_telefono_entry).pack(side="left", padx=5)
 tk.Radiobutton(frame_telefono, text="No", variable=var_telefono, value=0, bg="#faf2d3", font=("Roboto", 10), fg="#3e2723", command=toggle_telefono_entry).pack(side="left", padx=5)
 entry_telefono = tk.Entry(frame_telefono, font=("Roboto", 10), relief="flat", bg="#ffffff", bd=1)
 entry_telefono.pack(side="left", padx=5, fill="x", expand=True)
+aplicar_estilo_entry(entry_telefono)
 entry_telefono.bind("<KeyRelease>", lambda event: buscar_cliente(entry_telefono.get()))
 
 frame_cruces = tk.Frame(frame_datos, bg="#faf2d3")
 frame_cruces.pack(fill="x", padx=10, pady=3)
-tk.Label(frame_cruces, text="Cruces:", bg="#faf2d3", font=("Roboto", 10), fg="#3e2723").pack(side="left")
+tk.Label(frame_cruces, text="Cruces:", width=18, anchor="w", bg="#faf2d3", font=("Roboto", 10), fg="#3e2723").pack(side="left")
 entry_cruces = tk.Entry(frame_cruces, font=("Roboto", 10), relief="flat", bg="#ffffff", bd=1)
 entry_cruces.pack(side="left", padx=5, fill="x", expand=True)
+aplicar_estilo_entry(entry_cruces)
 
 frame_hora = tk.Frame(frame_datos, bg="#faf2d3")
 frame_hora.pack(fill="x", padx=10, pady=3)
-tk.Label(frame_hora, text="Hora en específico:", bg="#faf2d3", font=("Roboto", 10), fg="#3e2723").pack(side="left")
+tk.Label(frame_hora, text="Hora en específico:", width=18, anchor="w", bg="#faf2d3", font=("Roboto", 10), fg="#3e2723").pack(side="left")
 var_hora = tk.IntVar(value=0)
 tk.Radiobutton(frame_hora, text="Sí", variable=var_hora, value=1, bg="#faf2d3", font=("Roboto", 10), fg="#3e2723", command=toggle_hora_entry).pack(side="left", padx=5)
 tk.Radiobutton(frame_hora, text="No", variable=var_hora, value=0, bg="#faf2d3", font=("Roboto", 10), fg="#3e2723", command=toggle_hora_entry).pack(side="left", padx=5)
 entry_hora = tk.Entry(frame_hora, font=("Roboto", 10), relief="flat", bg="#ffffff", bd=1, state="disabled")
 entry_hora.pack(side="left", padx=5, fill="x", expand=True)
+aplicar_estilo_entry(entry_hora)
 def actualizar_hora(event):
     global hora_especifica
     if var_hora.get() == 1: hora_especifica = entry_hora.get()
     else: hora_especifica = None
 entry_hora.bind("<KeyRelease>", actualizar_hora)
 
-tk.Label(frame_superior_izq, text="Selecciona productos:", bg="#ffffff", font=("Roboto", 12, "bold"), fg="#3e2723").pack(pady=5, fill="x")
+tk.Label(frame_superior_izq, text="Selecciona productos por categoría:", bg="#ffffff", font=("Roboto", 12, "bold"), fg="#3e2723").pack(pady=(8, 5), fill="x")
 
 frame_botones = tk.Frame(frame_superior_izq, bg="#ffffff")
 frame_botones.pack(fill="both", expand=True, pady=5)
@@ -1707,18 +1869,26 @@ paquetes = ["Paquete 1", "Paquete 2", "Paquete 3", "Paquete 4", "Paquete 5"]
 frame_bebidas = tk.Frame(frame_botones, bg="#ffffff")
 frame_bebidas.grid(row=0, column=0, padx=3, sticky="nsew")
 tk.Label(frame_bebidas, text="Bebidas", font=("Roboto", 11, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=2)
+colores_bebidas = [
+    ("#0288d1", "#0277bd"),
+    ("#0277bd", "#01579b")
+]
 for nombre in bebidas:
     btn = tk.Button(frame_bebidas, text=nombre, font=("Roboto", 12), bg="#ff6f00", fg="white", relief="flat", activebackground="#ef6c00",
                     command=lambda n=nombre: mostrar_ventana_sabores(n) if n in ["Agua Chica", "Agua Grande"]
                     else mostrar_ventana_refrescos(n) if n == "Refresco"
                     else agregar_producto(n))
     btn.pack(pady=3, padx=5, fill="x")
-    btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#ef6c00"))
-    btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#ff6f00"))
+    color_base, color_hover = colores_bebidas[len(frame_bebidas.winfo_children()) % 2]
+    aplicar_estilo_boton(btn, color_base, color_hover)
 
 frame_comida = tk.Frame(frame_botones, bg="#ffffff")
 frame_comida.grid(row=0, column=1, padx=3, sticky="nsew")
 tk.Label(frame_comida, text="Comida", font=("Roboto", 11, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=2)
+colores_comida = [
+    ("#d32f2f", "#c62828"),
+    ("#c62828", "#b71c1c")
+]
 for nombre in comida:
     if nombre == "Torta": command = lambda n=nombre: mostrar_ventana_seleccion_carne(lambda carne: agregar_producto(n, carne))
     elif nombre == "Taco Dorado": command = lambda n=nombre: mostrar_ventana_tipo_taco(lambda tipo: agregar_producto(n, tipo))
@@ -1727,43 +1897,51 @@ for nombre in comida:
     else: command = lambda n=nombre: agregar_producto(n)
     btn = tk.Button(frame_comida, text=nombre, font=("Roboto", 12), bg="#ff6f00", fg="white", relief="flat", activebackground="#ef6c00", command=command)
     btn.pack(pady=3, padx=5, fill="x")
-    btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#ef6c00"))
-    btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#ff6f00"))
+    color_base, color_hover = colores_comida[len(frame_comida.winfo_children()) % 2]
+    aplicar_estilo_boton(btn, color_base, color_hover)
 
 btn_carne_gramos = tk.Button(frame_comida, text="Carne(Gramos)", font=("Roboto", 12), bg="#ff6f00", fg="white", relief="flat", activebackground="#ef6c00", command=agregar_carne_gramos)
 btn_carne_gramos.pack(pady=3, padx=5, fill="x")
-btn_carne_gramos.bind("<Enter>", lambda e: btn_carne_gramos.config(bg="#ef6c00"))
-btn_carne_gramos.bind("<Leave>", lambda e: btn_carne_gramos.config(bg="#ff6f00"))
+color_base, color_hover = colores_comida[len(frame_comida.winfo_children()) % 2]
+aplicar_estilo_boton(btn_carne_gramos, color_base, color_hover)
 
 frame_paquetes = tk.Frame(frame_botones, bg="#ffffff")
 frame_paquetes.grid(row=0, column=2, padx=3, sticky="nsew")
 tk.Label(frame_paquetes, text="Paquetes", font=("Roboto", 11, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=2)
+colores_paquetes = [
+    ("#2e7d32", "#1b5e20"),
+    ("#388e3c", "#2e7d32")
+]
 for nombre in paquetes:
     if nombre in ["Paquete 1", "Paquete 2"]:
         command = lambda n=nombre: mostrar_ventana_seleccion_carne(lambda carne: mostrar_ventana_tipo_taco(lambda tipo: mostrar_ventana_bebida_paquete(n, carne, tipo)))
     else: command = lambda n=nombre: agregar_producto(n)
     btn = tk.Button(frame_paquetes, text=nombre, font=("Roboto", 12), bg="#ff6f00", fg="white", relief="flat", activebackground="#ef6c00", command=command)
     btn.pack(pady=3, padx=5, fill="x")
-    btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#ef6c00"))
-    btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#ff6f00"))
+    color_base, color_hover = colores_paquetes[len(frame_paquetes.winfo_children()) % 2]
+    aplicar_estilo_boton(btn, color_base, color_hover)
 
 frame_nuevo_item = tk.Frame(frame_botones, bg="#ffffff")
 frame_nuevo_item.grid(row=0, column=3, padx=3, sticky="nsew")
 tk.Label(frame_nuevo_item, text="Otros", font=("Roboto", 11, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=2)
+colores_otros = [
+    ("#ff8f00", "#ef6c00"),
+    ("#ef6c00", "#e65100")
+]
 btn_nuevo_item = tk.Button(frame_nuevo_item, text="Nuevo Ítem", font=("Roboto", 12), bg="#ff6f00", fg="white", relief="flat", activebackground="#ef6c00", command=agregar_nuevo_item)
 btn_nuevo_item.pack(pady=3, padx=5, fill="x")
-btn_nuevo_item.bind("<Enter>", lambda e: btn_nuevo_item.config(bg="#ef6c00"))
-btn_nuevo_item.bind("<Leave>", lambda e: btn_nuevo_item.config(bg="#ff6f00"))
+color_base, color_hover = colores_otros[len(frame_nuevo_item.winfo_children()) % 2]
+aplicar_estilo_boton(btn_nuevo_item, color_base, color_hover)
 
 btn_descuento = tk.Button(frame_nuevo_item, text="Descuento", font=("Roboto", 12), bg="#ff6f00", fg="white", relief="flat", activebackground="#ef6c00", command=agregar_descuento)
 btn_descuento.pack(pady=3, padx=5, fill="x")
-btn_descuento.bind("<Enter>", lambda e: btn_descuento.config(bg="#ef6c00"))
-btn_descuento.bind("<Leave>", lambda e: btn_descuento.config(bg="#ff6f00"))
+color_base, color_hover = colores_otros[len(frame_nuevo_item.winfo_children()) % 2]
+aplicar_estilo_boton(btn_descuento, color_base, color_hover)
 
 btn_torta_mini = tk.Button(frame_nuevo_item, text="Torta Mini", font=("Roboto", 12), bg="#ff6f00", fg="white", relief="flat", activebackground="#ef6c00", command=lambda n="Torta Mini": mostrar_ventana_seleccion_carne(lambda carne: agregar_producto(n, carne)))
 btn_torta_mini.pack(pady=3, padx=5, fill="x")
-btn_torta_mini.bind("<Enter>", lambda e: btn_torta_mini.config(bg="#ef6c00"))
-btn_torta_mini.bind("<Leave>", lambda e: btn_torta_mini.config(bg="#ff6f00"))
+color_base, color_hover = colores_otros[len(frame_nuevo_item.winfo_children()) % 2]
+aplicar_estilo_boton(btn_torta_mini, color_base, color_hover)
 
 # --- SECCIÓN DE ACCIONES ---
 frame_acciones = tk.Frame(frame_superior_izq, bg="#ffffff")
@@ -1777,26 +1955,22 @@ frame_acciones.rowconfigure(1, weight=1)
 btn_agregar_cliente = tk.Button(frame_acciones, text="Agregar Cliente", command=crear_grupo, 
                                 bg="#4caf50", fg="white", font=("Roboto", 11, "bold"), relief="flat")
 btn_agregar_cliente.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
-btn_agregar_cliente.bind("<Enter>", lambda e: btn_agregar_cliente.config(bg="#388e3c"))
-btn_agregar_cliente.bind("<Leave>", lambda e: btn_agregar_cliente.config(bg="#4caf50"))
+aplicar_estilo_boton(btn_agregar_cliente, "#4caf50", "#388e3c")
 
 btn_imprimir_ticket = tk.Button(frame_acciones, text="Imprimir Ticket", command=imprimir_ticket, 
                                 bg="#4caf50", fg="white", font=("Roboto", 11, "bold"), relief="flat")
 btn_imprimir_ticket.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
-btn_imprimir_ticket.bind("<Enter>", lambda e: btn_imprimir_ticket.config(bg="#388e3c"))
-btn_imprimir_ticket.bind("<Leave>", lambda e: btn_imprimir_ticket.config(bg="#4caf50"))
+aplicar_estilo_boton(btn_imprimir_ticket, "#4caf50", "#388e3c")
 
 btn_limpiar_pedido = tk.Button(frame_acciones, text="Limpiar Pedido", command=limpiar_pedido, 
                                bg="#d32f2f", fg="white", font=("Roboto", 11, "bold"), relief="flat")
 btn_limpiar_pedido.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
-btn_limpiar_pedido.bind("<Enter>", lambda e: btn_limpiar_pedido.config(bg="#b71c1c"))
-btn_limpiar_pedido.bind("<Leave>", lambda e: btn_limpiar_pedido.config(bg="#d32f2f"))
+aplicar_estilo_boton(btn_limpiar_pedido, "#d32f2f", "#b71c1c")
 
 btn_lista = tk.Button(frame_acciones, text="Lista de Pedidos", command=mostrar_lista_pedidos, 
                       bg="#0288d1", fg="white", font=("Roboto", 11, "bold"), relief="flat")
 btn_lista.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
-btn_lista.bind("<Enter>", lambda e: btn_lista.config(bg="#01579b"))
-btn_lista.bind("<Leave>", lambda e: btn_lista.config(bg="#0288d1"))
+aplicar_estilo_boton(btn_lista, "#0288d1", "#01579b")
 
 # --- FOOTER ---
 frame_footer_izq = tk.Frame(panel_izquierdo, bg="#ffd54f")
@@ -1811,9 +1985,10 @@ btn_config = tk.Button(frame_footer_izq, image=img_engrane if img_engrane else N
 if img_engrane: btn_config.image = img_engrane
 btn_config.pack(padx=2, pady=2)
 
-panel_derecho = tk.Frame(frame_principal, bg="#ffffff", bd=1, relief="flat")
+panel_derecho = tk.Frame(frame_principal, bg="#ffffff", bd=1, relief="solid")
 panel_derecho.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
-tk.Label(panel_derecho, text="Resumen del Pedido:", font=("Roboto", 16, "bold"), bg="#ffffff", fg="#d32f2f").pack(anchor="w", pady=5, fill="x")
+tk.Label(panel_derecho, text="Resumen del Pedido", font=("Roboto", 16, "bold"), bg="#ffffff", fg="#d32f2f").pack(anchor="w", pady=(10, 3), fill="x", padx=8)
+tk.Label(panel_derecho, text="Verifica cantidades, notas y total antes de imprimir", font=("Roboto", 9), bg="#ffffff", fg="#6d4c41").pack(anchor="w", fill="x", padx=8, pady=(0, 6))
 frame_resumen = tk.Frame(panel_derecho, bg="#ffffff")
 frame_resumen.pack(fill="both", expand=True, anchor="n", padx=5)
 
