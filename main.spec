@@ -5,7 +5,7 @@ a = Analysis(
     ['Main.py'],
     pathex=[],
     binaries=[],
-    datas=[('precios.json', '.'), ('coca.png', '.'), ('fanta.png', '.'), ('mundet.png', '.'), ('sprite.png', '.'), ('engrane.png', '.')],
+    datas=[('precios.json', '.'), ('coca.png', '.'), ('fanta.png', '.'), ('mundet.png', '.'), ('sprite.png', '.'), ('engrane.png', '.'), ('cocalight.png', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -35,5 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['icon_torta.ico'],
+    icon=['icon_torrta.ico'],
 )
