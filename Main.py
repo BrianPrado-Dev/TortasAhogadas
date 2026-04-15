@@ -195,7 +195,50 @@ def dividir_campo(texto, prefijo, ancho_max=32):
     return "\n".join(lineas)
 
 # --- VENTANAS SELECCION ---
-def mostrar_ventana_seleccion_carne(callback):
+def crear_selector_cantidad(parent, bg="#e6d2a1", valor_inicial=1):
+    tk.Label(parent, text="Cantidad de paquetes:", font=("Roboto", 11, "bold"), bg=bg, fg="#3e2723").pack(pady=(6, 2))
+    frame_cantidad = tk.Frame(parent, bg=bg)
+    frame_cantidad.pack(pady=(0, 10))
+    cantidad_entry = tk.Entry(frame_cantidad, font=("Roboto", 14, "bold"), width=4, justify="center")
+    cantidad_entry.insert(0, str(max(1, int(valor_inicial))))
+
+    def decrementar():
+        try:
+            valor = int(cantidad_entry.get())
+            if valor > 1:
+                cantidad_entry.delete(0, tk.END)
+                cantidad_entry.insert(0, str(valor - 1))
+        except ValueError:
+            cantidad_entry.delete(0, tk.END)
+            cantidad_entry.insert(0, "1")
+
+    def incrementar():
+        try:
+            valor = int(cantidad_entry.get())
+            cantidad_entry.delete(0, tk.END)
+            cantidad_entry.insert(0, str(valor + 1))
+        except ValueError:
+            cantidad_entry.delete(0, tk.END)
+            cantidad_entry.insert(0, "1")
+
+    tk.Button(frame_cantidad, text="-", font=("Roboto", 12, "bold"), command=decrementar,
+              bg="#d32f2f", fg="white", relief="flat", width=3).pack(side="left", padx=6)
+    cantidad_entry.pack(side="left", padx=3)
+    tk.Button(frame_cantidad, text="+", font=("Roboto", 12, "bold"), command=incrementar,
+              bg="#4caf50", fg="white", relief="flat", width=3).pack(side="left", padx=6)
+    return cantidad_entry
+
+def leer_cantidad_entry(entry, parent_ventana):
+    try:
+        cantidad = int(entry.get().strip())
+        if cantidad <= 0:
+            raise ValueError("La cantidad debe ser mayor a 0.")
+        return cantidad
+    except ValueError:
+        messagebox.showerror("Error", "Cantidad inválida. Ingresa un número mayor a 0.", parent=parent_ventana)
+        return None
+
+def mostrar_ventana_seleccion_carne(callback, cantidad_state=None):
     ventana_carne = tk.Toplevel(ventana)
     ventana_carne.title("Seleccionar Carne")
     ventana_carne.geometry("450x420")
@@ -233,23 +276,32 @@ def mostrar_ventana_seleccion_carne(callback):
                         command=lambda c=carne, cb=color_base, cs=color_seleccion: toggle_seleccion(c, cb, cs))
         btn.grid(row=pos[0], column=pos[1], padx=10, pady=10, sticky="nsew")
         botones[carne] = btn
+    cantidad_entry = None
+    if cantidad_state is not None:
+        cantidad_entry = crear_selector_cantidad(ventana_carne, bg="#e6d2a1", valor_inicial=cantidad_state.get("cantidad", 1))
+
     def on_continuar():
         if not selecciones:
             messagebox.showerror("Error", "Debes seleccionar al menos un tipo de carne.", parent=ventana_carne)
             return
+        if cantidad_state is not None and cantidad_entry is not None:
+            cantidad = leer_cantidad_entry(cantidad_entry, ventana_carne)
+            if cantidad is None:
+                return
+            cantidad_state["cantidad"] = cantidad
         orden_carnes = {"Carne": 1, "Buche": 2, "Lengua": 3, "Mixta": 4}
         selecciones.sort(key=lambda x: orden_carnes[x])
         resultado = "-".join(selecciones)
         ventana_carne.destroy()
         callback(resultado)
-    btn_continuar = tk.Button(ventana_carne, text="Continuar", font=("Roboto", 12, "bold"),
-                              bg="#4caf50", fg="white", command=on_continuar)
-    btn_continuar.pack(pady=20, padx=20, fill="x")
+    btn_continuar = tk.Button(ventana_carne, text="Continuar", font=("Roboto", 13, "bold"),
+                              bg="#4caf50", fg="white", command=on_continuar, pady=8)
+    btn_continuar.pack(pady=12, padx=20, fill="x")
     ventana_carne.transient(ventana)
     ventana_carne.grab_set()
     ventana.wait_window(ventana_carne)
 
-def mostrar_ventana_tipo_taco(callback):
+def mostrar_ventana_tipo_taco(callback, cantidad_state=None):
     ventana_taco = tk.Toplevel(ventana)
     ventana_taco.title("Seleccionar Tipo de Taco")
     ventana_taco.geometry("450x420")
@@ -285,18 +337,27 @@ def mostrar_ventana_tipo_taco(callback):
                         command=lambda t=tipo: toggle_seleccion(t))
         btn.grid(row=pos[0], column=pos[1], padx=10, pady=10, sticky="nsew")
         botones[tipo] = btn
+    cantidad_entry = None
+    if cantidad_state is not None:
+        cantidad_entry = crear_selector_cantidad(ventana_taco, bg="#e6d2a1", valor_inicial=cantidad_state.get("cantidad", 1))
+
     def on_continuar():
         if not selecciones:
             messagebox.showerror("Error", "Debes seleccionar al menos un tipo de taco.", parent=ventana_taco)
             return
+        if cantidad_state is not None and cantidad_entry is not None:
+            cantidad = leer_cantidad_entry(cantidad_entry, ventana_taco)
+            if cantidad is None:
+                return
+            cantidad_state["cantidad"] = cantidad
         orden_tipos = {"Papa": 1, "Frijol": 2, "Requeson": 3, "Picadillo": 4}
         selecciones.sort(key=lambda x: orden_tipos[x])
         resultado = "-".join(selecciones)
         ventana_taco.destroy()
         callback(resultado)
-    btn_continuar = tk.Button(ventana_taco, text="Continuar", font=("Roboto", 12, "bold"),
-                              bg="#4caf50", fg="white", command=on_continuar)
-    btn_continuar.pack(pady=20, padx=20, fill="x")
+    btn_continuar = tk.Button(ventana_taco, text="Continuar", font=("Roboto", 13, "bold"),
+                              bg="#4caf50", fg="white", command=on_continuar, pady=8)
+    btn_continuar.pack(pady=12, padx=20, fill="x")
     ventana_taco.transient(ventana)
     ventana_taco.grab_set()
     ventana.wait_window(ventana_taco)
@@ -410,36 +471,373 @@ def mostrar_ventana_refrescos(nombre, callback=None):
 
     ventana_sabores.protocol("WM_DELETE_WINDOW", lambda: ventana_sabores.destroy())
 
-def mostrar_ventana_bebida_paquete(nombre_paquete, seleccion_carne, seleccion_taco):
+def mostrar_ventana_item_unificado(nombre, tipo_variante=None):
+    global grupo_actual
+    if grupo_actual is None:
+        grupo_actual = "General"
+        if "General" not in grupos: grupos.append("General")
+    if not any(item["nombre"] == "Envío" for item in pedido_actual):
+        pedido_actual.append({ "nombre": "Envío", "anotacion": None, "precio": 15, "grupo": "General", "cantidad": 1 })
+
+    ventana_item = tk.Toplevel(ventana)
+    ventana_item.title(f"Agregar {nombre}")
+    if tipo_variante == "carne_taco":
+        ventana_item.geometry("820x660")
+    elif tipo_variante == "carne":
+        ventana_item.geometry("620x640")
+    else:
+        ventana_item.geometry("620x700")
+    ventana_item.configure(bg="#e6d2a1")
+    ventana_item.resizable(False, False)
+
+    tk.Label(ventana_item, text=f"{nombre}", font=("Roboto", 14, "bold"), bg="#e6d2a1", fg="#3e2723").pack(pady=(12, 8))
+
+    carnes_sel = []
+    tacos_sel = []
+    bebida_sel = tk.StringVar(value="")
+
+    def obtener_carnes():
+        if not carnes_sel:
+            return None
+        orden_carnes = {"Carne": 1, "Buche": 2, "Lengua": 3, "Mixta": 4}
+        return "-".join(sorted(carnes_sel, key=lambda x: orden_carnes[x]))
+
+    def obtener_tacos():
+        if not tacos_sel:
+            return None
+        orden_tacos = {"Papa": 1, "Frijol": 2, "Requeson": 3, "Picadillo": 4}
+        return "-".join(sorted(tacos_sel, key=lambda x: orden_tacos[x]))
+
+    def crear_selector_carnes(parent, titulo="Selecciona carne (máximo 2):"):
+        seccion = tk.LabelFrame(parent, text=titulo, font=("Roboto", 11, "bold"), bg="#f3e8c2", fg="#3e2723", bd=2, relief="groove", padx=10, pady=8)
+        if tipo_variante == "carne":
+            seccion.pack(fill="x", expand=False, padx=8, pady=6)
+        else:
+            seccion.pack(fill="both", expand=True, padx=8, pady=6)
+        frame = tk.Frame(seccion, bg="#f3e8c2")
+        frame.pack(fill="x", expand=False)
+        botones = {}
+        config = [("Carne", "#d32f2f", "#b71c1c"), ("Buche", "#c62828", "#a12020"), ("Lengua", "#b71c1c", "#901616"), ("Mixta", "#e53935", "#c02f2f")]
+        if tipo_variante == "carne":
+            btn_w = 17
+            btn_h = 5
+            btn_font = ("Roboto", 13, "bold")
+        elif tipo_variante == "carne_taco":
+            btn_w = 16
+            btn_h = 4
+            btn_font = ("Roboto", 12, "bold")
+        else:
+            btn_w = 15
+            btn_h = 4
+            btn_font = ("Roboto", 12, "bold")
+        for i, (txt, cbase, csel) in enumerate(config):
+            btn = tk.Button(frame, text=txt, font=btn_font, bg=cbase, fg="white", relief="raised", width=btn_w, height=btn_h)
+            def on_click(valor=txt, base=cbase, sel=csel):
+                if valor in carnes_sel:
+                    carnes_sel.remove(valor)
+                    botones[valor].config(bg=base, relief="raised")
+                else:
+                    if len(carnes_sel) >= 2:
+                        messagebox.showwarning("Límite", "Máximo 2 carnes.", parent=ventana_item)
+                        return
+                    carnes_sel.append(valor)
+                    botones[valor].config(bg=sel, relief="sunken")
+            btn.config(command=on_click)
+            btn.grid(row=i // 2, column=i % 2, padx=8, pady=8)
+            botones[txt] = btn
+
+    def crear_selector_tacos(parent, titulo="Selecciona tipo de taco:"):
+        seccion = tk.LabelFrame(parent, text=titulo, font=("Roboto", 11, "bold"), bg="#f3e8c2", fg="#3e2723", bd=2, relief="groove", padx=10, pady=8)
+        if tipo_variante == "taco":
+            seccion.pack(fill="x", expand=False, padx=8, pady=6)
+        else:
+            seccion.pack(fill="both", expand=True, padx=8, pady=6)
+        frame = tk.Frame(seccion, bg="#f3e8c2")
+        frame.pack(fill="x", expand=False)
+        botones = {}
+        config = [("Papa", "#FFF59D", "#FBC02D", "black"), ("Frijol", "#8D6E63", "#5D4037", "white"),
+                  ("Requeson", "#EEEEEE", "#BDBDBD", "black"), ("Picadillo", "#BF360C", "#9E2B0C", "white")]
+        for i, (txt, cbase, csel, fg) in enumerate(config):
+            if tipo_variante == "taco":
+                btn = tk.Button(frame, text=txt, font=("Roboto", 13, "bold"), bg=cbase, fg=fg, relief="raised", width=17, height=5)
+            else:
+                btn = tk.Button(frame, text=txt, font=("Roboto", 12, "bold"), bg=cbase, fg=fg, relief="raised", width=13, height=4)
+            def on_click(valor=txt, base=cbase, sel=csel):
+                if valor in tacos_sel:
+                    tacos_sel.remove(valor)
+                    botones[valor].config(bg=base, relief="raised")
+                else:
+                    tacos_sel.append(valor)
+                    botones[valor].config(bg=sel, relief="sunken")
+            btn.config(command=on_click)
+            btn.grid(row=i // 2, column=i % 2, padx=8, pady=8)
+            botones[txt] = btn
+
+    def crear_selector_refresco(parent):
+        tk.Label(parent, text="Selecciona refresco:", font=("Roboto", 11, "bold"), bg="#e6d2a1", fg="#3e2723").pack(anchor="w", pady=(4, 4))
+        frame = tk.Frame(parent, bg="#e6d2a1")
+        frame.pack(pady=(0, 4))
+        opciones = [("COCA", "#d32f2f"), ("FANTA", "#ff6f00"), ("MANZA", "#8d6e63"), ("SPRITE", "#4caf50"), ("COCA LIGHT", "#424242")]
+        for i, (txt, color) in enumerate(opciones):
+            fg = "black" if txt == "COCA LIGHT" else "white"
+            rb = tk.Radiobutton(frame, text=txt, value=txt, variable=bebida_sel, indicatoron=0,
+                                font=("Roboto", 11, "bold"), bg=color, fg=fg, selectcolor=color,
+                                activebackground=color, activeforeground=fg, relief="flat", width=12, height=4)
+            rb.grid(row=i // 2, column=i % 2, padx=8, pady=8)
+
+    def crear_selector_agua(parent):
+        tk.Label(parent, text="Selecciona agua fresca:", font=("Roboto", 11, "bold"), bg="#e6d2a1", fg="#3e2723").pack(anchor="w", pady=(4, 4))
+        frame = tk.Frame(parent, bg="#e6d2a1")
+        frame.pack(pady=(0, 4))
+        opciones = [("Jamaica", "#9c0000", "white"), ("Horchata", "#f5f5f5", "black")]
+        for i, (txt, color, fg) in enumerate(opciones):
+            rb = tk.Radiobutton(frame, text=txt, value=txt, variable=bebida_sel, indicatoron=0,
+                                font=("Roboto", 11, "bold"), bg=color, fg=fg, selectcolor=color,
+                                activebackground=color, activeforeground=fg, relief="flat", width=12, height=4)
+            rb.grid(row=0, column=i, padx=8, pady=8)
+
+    frame_variante = tk.Frame(ventana_item, bg="#e6d2a1")
+    if tipo_variante == "carne":
+        frame_variante.pack(fill="x", expand=False, padx=12, pady=(2, 0))
+    else:
+        frame_variante.pack(fill="both", expand=True, padx=12, pady=(2, 0))
+
+    if tipo_variante == "carne_taco":
+        frame_variante.grid_columnconfigure(0, weight=1, uniform="seccion_variante")
+        frame_variante.grid_columnconfigure(1, weight=1, uniform="seccion_variante")
+        frame_izq = tk.Frame(frame_variante, bg="#e6d2a1")
+        frame_der = tk.Frame(frame_variante, bg="#e6d2a1")
+        frame_izq.grid(row=0, column=0, sticky="nsew")
+        frame_der.grid(row=0, column=1, sticky="nsew")
+        crear_selector_carnes(frame_izq, "Sección Carne")
+        crear_selector_tacos(frame_der, "Sección Sabor de Taco")
+    else:
+        if tipo_variante == "carne":
+            crear_selector_carnes(frame_variante)
+        if tipo_variante == "taco":
+            crear_selector_tacos(frame_variante)
+        if tipo_variante == "refresco":
+            crear_selector_refresco(frame_variante)
+        if tipo_variante == "agua":
+            crear_selector_agua(frame_variante)
+
+    if tipo_variante in ("carne", "taco"):
+        frame_variante.update_idletasks()
+        requerido = frame_variante.winfo_reqheight() + 220
+        nuevo_alto = max(640, min(requerido, 760))
+        ventana_item.geometry(f"620x{nuevo_alto}")
+
+    tk.Label(ventana_item, text="Cantidad:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=(10, 2))
+    frame_cantidad = tk.Frame(ventana_item, bg="#e6d2a1")
+    frame_cantidad.pack(pady=5)
+    font_widgets = ("Roboto", 16, "bold")
+    cantidad_entry = tk.Entry(frame_cantidad, font=font_widgets, width=5, justify='center')
+    cantidad_entry.insert(0, "1")
+
+    def decrementar_cantidad():
+        try:
+            valor_actual = int(cantidad_entry.get())
+            if valor_actual > 1:
+                cantidad_entry.delete(0, tk.END)
+                cantidad_entry.insert(0, str(valor_actual - 1))
+        except ValueError:
+            cantidad_entry.delete(0, tk.END)
+            cantidad_entry.insert(0, "1")
+
+    def incrementar_cantidad():
+        try:
+            valor_actual = int(cantidad_entry.get())
+            cantidad_entry.delete(0, tk.END)
+            cantidad_entry.insert(0, str(valor_actual + 1))
+        except ValueError:
+            cantidad_entry.delete(0, tk.END)
+            cantidad_entry.insert(0, "1")
+
+    tk.Button(frame_cantidad, text="-", font=font_widgets, command=decrementar_cantidad, bg="#d32f2f", fg="white", relief="flat").pack(side=tk.LEFT, padx=10)
+    cantidad_entry.pack(side=tk.LEFT, padx=5)
+    tk.Button(frame_cantidad, text="+", font=font_widgets, command=incrementar_cantidad, bg="#4CAF50", fg="white", relief="flat").pack(side=tk.LEFT, padx=10)
+
+    tk.Label(ventana_item, text="Nota:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=8)
+    nota_entry = tk.Entry(ventana_item, font=("Roboto", 12), width=32)
+    nota_entry.pack(pady=8)
+
+    def confirmar():
+        try:
+            cantidad = int(cantidad_entry.get())
+            if cantidad <= 0:
+                raise ValueError("Cantidad debe ser mayor a 0.")
+
+            variante = None
+            if tipo_variante == "carne":
+                variante = obtener_carnes()
+                if not variante:
+                    messagebox.showerror("Error", "Selecciona al menos una carne.", parent=ventana_item)
+                    return
+            elif tipo_variante == "taco":
+                variante = obtener_tacos()
+                if not variante:
+                    messagebox.showerror("Error", "Selecciona al menos un tipo de taco.", parent=ventana_item)
+                    return
+            elif tipo_variante == "carne_taco":
+                carne = obtener_carnes()
+                taco = obtener_tacos()
+                if not carne or not taco:
+                    messagebox.showerror("Error", "Selecciona carne y tipo de taco.", parent=ventana_item)
+                    return
+                variante = f"{carne}, {taco}"
+            elif tipo_variante in ("refresco", "agua"):
+                variante = bebida_sel.get().strip()
+                if not variante:
+                    messagebox.showerror("Error", "Selecciona una bebida.", parent=ventana_item)
+                    return
+
+            nota = nota_entry.get().strip()
+            if variante and nota:
+                anotacion_final = f"{variante}, {nota}"
+            elif variante:
+                anotacion_final = variante
+            elif nota:
+                anotacion_final = nota
+            else:
+                anotacion_final = None
+
+            precio_final = menu_productos[nombre] * cantidad
+            item = { "nombre": nombre, "anotacion": anotacion_final, "precio": precio_final, "grupo": grupo_actual, "cantidad": cantidad }
+            pedido_actual.append(item)
+            ventana_item.destroy()
+            actualizar_ticket()
+        except ValueError as e:
+            messagebox.showerror("Error", f"Entrada inválida: {e}", parent=ventana_item)
+
+    tk.Button(ventana_item, text="Confirmar", font=("Roboto", 12, "bold"), bg="#4caf50", fg="white", command=confirmar, width=18, pady=6).pack(pady=12)
+    ventana_item.transient(ventana)
+
+def mostrar_ventana_bebida_paquete(nombre_paquete, seleccion_carne, seleccion_taco, cantidad_state=None):
     global ventana_sabores
     if ventana_sabores: ventana_sabores.destroy()
     ventana_sabores = tk.Toplevel(ventana)
     ventana_sabores.title(f"Seleccionar Bebida para {nombre_paquete}")
-    window_width = max(int(screen_width * 0.35), 350)
-    window_height = max(int(screen_height * 0.25), 200)
+    window_width = max(int(screen_width * 0.7), 860)
+    window_height = max(int(screen_height * 0.62), 520)
     ventana_sabores.geometry(f"{window_width}x{window_height}")
     ventana_sabores.configure(bg="#e6d2a1")
     ventana_sabores.resizable(True, True)
-    ventana_sabores.minsize(350, 200)
-    tk.Label(ventana_sabores, text=f"¿Qué bebida quieres con el {nombre_paquete}?", font=("Roboto", 12, "bold"), bg="#e6d2a1", fg="#3e2723").pack(pady=15, fill="x")
+    ventana_sabores.minsize(860, 520)
+
+    tk.Label(
+        ventana_sabores,
+        text=f"Selecciona la bebida para {nombre_paquete}",
+        font=("Roboto", 14, "bold"),
+        bg="#e6d2a1",
+        fg="#3e2723"
+    ).pack(pady=(12, 2), fill="x")
+    tk.Label(
+        ventana_sabores,
+        text="Toca una opción para agregarla al paquete",
+        font=("Roboto", 10),
+        bg="#e6d2a1",
+        fg="#6d4c41"
+    ).pack(pady=(0, 10), fill="x")
+
     frame_btn_bebidas = tk.Frame(ventana_sabores, bg="#e6d2a1")
-    frame_btn_bebidas.pack(pady=10, fill="both", expand=True, padx=20)
-    frame_btn_bebidas.grid_columnconfigure(0, weight=1)
-    frame_btn_bebidas.grid_columnconfigure(1, weight=1)
-    frame_btn_bebidas.grid_rowconfigure(0, weight=1)
-    btn_refresco = tk.Button(frame_btn_bebidas, text="REFRESCO", font=("Roboto", 12, "bold"),
-                             bg="#2196f3", fg="white", relief="flat", activebackground="#1976d2",
-                             command=lambda: [ventana_sabores.destroy(), seleccionar_refresco_paquete(nombre_paquete, seleccion_carne, seleccion_taco)])
-    btn_refresco.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-    btn_refresco.bind("<Enter>", lambda e: btn_refresco.config(bg="#1976d2"))
-    btn_refresco.bind("<Leave>", lambda e: btn_refresco.config(bg="#2196f3"))
-    
-    btn_agua = tk.Button(frame_btn_bebidas, text="AGUA FRESCA", font=("Roboto", 12, "bold"),
-                         bg="#4caf50", fg="white", relief="flat", activebackground="#388e3c",
-                         command=lambda: [ventana_sabores.destroy(), seleccionar_agua_paquete(nombre_paquete, seleccion_carne, seleccion_taco)])
-    btn_agua.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
-    btn_agua.bind("<Enter>", lambda e: btn_agua.config(bg="#388e3c"))
-    btn_agua.bind("<Leave>", lambda e: btn_agua.config(bg="#4caf50"))
+    frame_btn_bebidas.pack(pady=4, fill="both", expand=True, padx=16)
+    for c in range(3):
+        frame_btn_bebidas.grid_columnconfigure(c, weight=1, uniform="seccion_bebida")
+
+    cantidad_entry = crear_selector_cantidad(
+        ventana_sabores,
+        bg="#e6d2a1",
+        valor_inicial=cantidad_state.get("cantidad", 1) if cantidad_state else 1
+    )
+
+    secciones_bebida = [
+        ("Refrescos", "#0288d1", [
+            ("COCA", "#d32f2f", "#b71c1c", "refresco", 0),
+            ("FANTA", "#ff6f00", "#ef6c00", "refresco", 0),
+            ("MANZA", "#8d6e63", "#6d4c41", "refresco", 0),
+            ("SPRITE", "#4caf50", "#388e3c", "refresco", 0),
+            ("COCA LIGHT", "#424242", "#212121", "refresco", 0),
+        ]),
+        ("Aguas frescas", "#43a047", [
+            ("JAMAICA", "#9c0000", "#7a0000", "agua", 0),
+            ("HORCHATA", "#f5f5f5", "#d6d6d6", "agua", 0),
+        ]),
+        ("Corona (+$5)", "#bf8c00", [
+            ("CORONA CLARA (+$5)", "#f9a825", "#f57f17", "cerveza", 5),
+            ("CORONA OSCURA (+$5)", "#5d4037", "#4e342e", "cerveza", 5),
+        ]),
+    ]
+
+    def seleccionar_bebida_paquete(texto_boton, categoria="refresco", extra_precio=0):
+        cantidad_final = 1
+        if cantidad_entry is not None:
+            cantidad_leida = leer_cantidad_entry(cantidad_entry, ventana_sabores)
+            if cantidad_leida is None:
+                return
+            cantidad_final = cantidad_leida
+            if cantidad_state is not None:
+                cantidad_state["cantidad"] = cantidad_final
+        if texto_boton.startswith("CORONA CLARA"):
+            bebida = "Corona Clara"
+        elif texto_boton.startswith("CORONA OSCURA"):
+            bebida = "Corona Oscura"
+        else:
+            bebida = texto_boton
+
+        if categoria == "agua":
+            anotacion = f"Agua: {bebida.title()}, Torta({seleccion_carne}), Tacos({seleccion_taco})"
+        elif categoria == "cerveza":
+            anotacion = f"Cerveza: {bebida.title()}, Torta({seleccion_carne}), Tacos({seleccion_taco})"
+        else:
+            anotacion = f"Refresco: {bebida}, Torta({seleccion_carne}), Tacos({seleccion_taco})"
+
+        ventana_sabores.destroy()
+        agregar_producto_paquete_bebida(nombre_paquete, anotacion, extra_precio, cantidad_predeterminada=cantidad_final)
+
+    for idx, (titulo, color_titulo, opciones) in enumerate(secciones_bebida):
+        frame_seccion = tk.Frame(frame_btn_bebidas, bg="#f7efd8", bd=1, relief="solid")
+        frame_seccion.grid(row=0, column=idx, padx=6, pady=4, sticky="nsew")
+
+        header_seccion = tk.Frame(frame_seccion, bg=color_titulo, height=28)
+        header_seccion.pack(fill="x")
+        header_seccion.pack_propagate(False)
+        tk.Label(
+            header_seccion,
+            text=titulo,
+            font=("Roboto", 10, "bold"),
+            bg=color_titulo,
+            fg="white"
+        ).pack(anchor="w", padx=8, pady=4)
+
+        grid_seccion = tk.Frame(frame_seccion, bg="#f7efd8")
+        grid_seccion.pack(fill="both", expand=True, padx=8, pady=8)
+        grid_seccion.grid_columnconfigure(0, weight=1)
+
+        for i, (texto, color, hover, categoria, extra) in enumerate(opciones):
+            fg_color = "black" if texto == "HORCHATA" else "white"
+            btn = tk.Button(
+                grid_seccion,
+                text=texto,
+                font=("Roboto", 10, "bold"),
+                bg=color,
+                fg=fg_color,
+                relief="flat",
+                activebackground=hover,
+                width=13,
+                height=4,
+                command=lambda t=texto, cat=categoria, e=extra: seleccionar_bebida_paquete(t, cat, e)
+            )
+            btn.grid(row=i, column=0, padx=5, pady=5, sticky="nsew")
+            btn.bind("<Enter>", lambda e, b=btn, c=hover: b.config(bg=c))
+            btn.bind("<Leave>", lambda e, b=btn, c=color: b.config(bg=c))
+
+    tk.Label(
+        ventana_sabores,
+        text="* Corona clara y oscura agregan $5 al paquete",
+        font=("Roboto", 9, "italic"),
+        bg="#e6d2a1",
+        fg="#6d4c41"
+    ).pack(pady=(4, 8))
     ventana_sabores.protocol("WM_DELETE_WINDOW", lambda: ventana_sabores.destroy())
 
 def seleccionar_refresco_paquete(nombre_paquete, seleccion_carne, seleccion_taco):
@@ -453,6 +851,25 @@ def seleccionar_agua_paquete(nombre_paquete, seleccion_carne, seleccion_taco):
         anotacion_combinada = f"Agua: {sabor_agua}, Torta({seleccion_carne}), Tacos({seleccion_taco})"
         agregar_producto_paquete_agua(nombre_paquete, anotacion_combinada)
     mostrar_ventana_sabores("agua fresca", callback=callback_agua)
+
+def agregar_producto_paquete_bebida(nombre, anotacion_bebida, extra_precio=0, cantidad_predeterminada=1):
+    global grupo_actual
+    if grupo_actual is None:
+        grupo_actual = "General"
+        if "General" not in grupos: grupos.append("General")
+    if not any(item["nombre"] == "Envío" for item in pedido_actual):
+        pedido_actual.append({ "nombre": "Envío", "anotacion": None, "precio": 15, "grupo": "General", "cantidad": 1 })
+    cantidad = max(1, int(cantidad_predeterminada))
+    precio_base = menu_productos[nombre] + extra_precio
+    item = {
+        "nombre": nombre,
+        "anotacion": anotacion_bebida,
+        "precio": precio_base * cantidad,
+        "grupo": grupo_actual,
+        "cantidad": cantidad
+    }
+    pedido_actual.append(item)
+    actualizar_ticket()
 
 def agregar_producto_paquete_agua(nombre, sabor_agua):
     global grupo_actual
@@ -526,14 +943,46 @@ def _agregar_carne_gramos_callback(carne_seleccionada):
         pedido_actual.append({ "nombre": "Envío", "anotacion": None, "precio": 15, "grupo": "General", "cantidad": 1 })
     ventana_carne = tk.Toplevel(ventana)
     ventana_carne.title("Carne(Gramos)")
-    ventana_carne.geometry("400x350")
+    ventana_carne.geometry("420x470")
     ventana_carne.configure(bg="#e6d2a1")
     tk.Label(ventana_carne, text="Gramos:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=5)
     gramos_entry = tk.Entry(ventana_carne, font=("Roboto", 12), width=20)
     gramos_entry.pack(pady=2)
+    frame_gramos_presets = tk.Frame(ventana_carne, bg="#e6d2a1")
+    frame_gramos_presets.pack(pady=(3, 8))
+
+    def seleccionar_gramos_preset(valor):
+        gramos_entry.delete(0, tk.END)
+        gramos_entry.insert(0, str(valor))
+        dinero_entry.delete(0, tk.END)
+
+    for texto, valor in [("50gr", 50), ("100gr", 100), ("250gr", 250), ("500gr", 500), ("1kg", 1000)]:
+        btn_preset = tk.Button(
+            frame_gramos_presets, text=texto, font=("Roboto", 10, "bold"),
+            bg="#8d6e63", fg="white", relief="flat", padx=7, pady=3,
+            command=lambda v=valor: seleccionar_gramos_preset(v)
+        )
+        btn_preset.pack(side="left", padx=3)
+
     tk.Label(ventana_carne, text="O Monto ($):", font=("Roboto", 12), bg="#e6d2a1").pack(pady=5)
     dinero_entry = tk.Entry(ventana_carne, font=("Roboto", 12), width=20)
     dinero_entry.pack(pady=2)
+    frame_dinero_presets = tk.Frame(ventana_carne, bg="#e6d2a1")
+    frame_dinero_presets.pack(pady=(3, 8))
+
+    def seleccionar_dinero_preset(valor):
+        dinero_entry.delete(0, tk.END)
+        dinero_entry.insert(0, str(valor))
+        gramos_entry.delete(0, tk.END)
+
+    for texto, valor in [("$20", 20), ("$50", 50), ("$100", 100), ("$250", 250)]:
+        btn_preset = tk.Button(
+            frame_dinero_presets, text=texto, font=("Roboto", 10, "bold"),
+            bg="#2e7d32", fg="white", relief="flat", padx=10, pady=3,
+            command=lambda v=valor: seleccionar_dinero_preset(v)
+        )
+        btn_preset.pack(side="left", padx=4)
+
     tk.Label(ventana_carne, text="Nota:", font=("Roboto", 12), bg="#e6d2a1").pack(pady=5)
     nota_entry = tk.Entry(ventana_carne, font=("Roboto", 12), width=30)
     nota_entry.pack(pady=2)
@@ -794,19 +1243,28 @@ def renombrar_grupo(nombre_viejo):
     entry_nuevo.bind("<Escape>", lambda e: ventana_rename.destroy())
 
 def crear_grupo():
-    global grupo_actual, plato_counter
-    plato_counter += 1
-    nombre = f"Plato {plato_counter}"
+    global grupo_actual
+    nombre = generar_nombre_plato_unico()
     grupo_actual = nombre
     if nombre not in grupos: grupos.append(nombre)
     actualizar_ticket()
 
+def generar_nombre_plato_unico():
+    global plato_counter
+    while True:
+        plato_counter += 1
+        nombre = f"Plato {plato_counter}"
+        if nombre not in grupos:
+            return nombre
+
 def duplicar_grupo(grupo_origen):
-    global grupo_actual, plato_counter
-    plato_counter += 1
-    nuevo_nombre = f"Plato {plato_counter}"
-    # Copiar todos los items del grupo origen al nuevo grupo
-    items_a_copiar = [item for item in pedido_actual if item.get("grupo") == grupo_origen]
+    global grupo_actual
+    nuevo_nombre = generar_nombre_plato_unico()
+    # Copiar todos los items del grupo origen al nuevo grupo, excepto Envío (solo debe existir uno)
+    items_a_copiar = [
+        item for item in pedido_actual
+        if item.get("grupo") == grupo_origen and item.get("nombre") != "Envío"
+    ]
     for item in items_a_copiar:
         nuevo_item = copy.deepcopy(item)
         nuevo_item["grupo"] = nuevo_nombre
@@ -836,11 +1294,18 @@ def actualizar_ticket():
             grupo = item.get("grupo", "General")
             items_agrupados.setdefault(grupo, []).append(item)
         for grupo in sorted(items_agrupados.keys(), key=lambda x: (x == "General", x)):
+            frame_plato = tk.Frame(columna_actual, bg="#fffdf7", bd=2, relief="groove", highlightthickness=1, highlightbackground="#e0c684")
+            frame_plato.pack(fill="x", pady=(8, 4), padx=2)
+
             es_activo = (grupo == grupo_actual)
             bg_header = "#ffd54f" if es_activo else "#f5f0e0"
             fg_header = "#3e2723"
-            frame_grupo_header = tk.Frame(columna_actual, bg=bg_header, cursor="hand2", bd=1, relief="solid")
-            frame_grupo_header.pack(fill="x", pady=(8, 2))
+            fila_grupo = tk.Frame(frame_plato, bg="#fffdf7")
+            fila_grupo.pack(fill="x", pady=(8, 2), padx=8)
+
+            # Rectangulo del nombre del plato (seleccionable)
+            frame_grupo_header = tk.Frame(fila_grupo, bg=bg_header, cursor="hand2", bd=1, relief="solid")
+            frame_grupo_header.pack(side="left", fill="x", expand=True)
             
             # Indicador de selección
             indicador = "▸ " if es_activo else "  "
@@ -848,18 +1313,24 @@ def actualizar_ticket():
                 anchor="w", bg=bg_header, fg=fg_header, padx=6, pady=4)
             lbl_grupo.pack(side="left")
             
-            if grupo != "General":
-                btn_editar_grupo = tk.Button(frame_grupo_header, text="Editar nombre", font=("Roboto", 8),
-                    bg=bg_header, fg="#5d4037", relief="flat", bd=0, cursor="hand2",
-                    activebackground=bg_header,
-                    command=lambda g=grupo: renombrar_grupo(g))
-                btn_editar_grupo.pack(side="right", padx=(3, 6))
-                
-                btn_duplicar_grupo = tk.Button(frame_grupo_header, text="Duplicar plato", font=("Roboto", 8),
-                    bg=bg_header, fg="#2e7d32", relief="flat", bd=0, cursor="hand2",
-                    activebackground=bg_header,
-                    command=lambda g=grupo: duplicar_grupo(g))
-                btn_duplicar_grupo.pack(side="right", padx=3)
+            frame_acciones_grupo = tk.Frame(fila_grupo, bg="#fffdf7")
+            frame_acciones_grupo.pack(side="right", padx=(6, 0))
+
+            btn_editar_grupo = tk.Button(frame_acciones_grupo, text="Editar nombre", font=("Roboto", 8, "bold"),
+                bg="#ffa726", fg="white", relief="flat", bd=0, cursor="hand2",
+                activebackground="#fb8c00",
+                command=lambda g=grupo: renombrar_grupo(g))
+            btn_editar_grupo.pack(side="right", padx=(4, 0), ipadx=4, ipady=2)
+            btn_editar_grupo.bind("<Enter>", lambda e, b=btn_editar_grupo: b.config(bg="#fb8c00"))
+            btn_editar_grupo.bind("<Leave>", lambda e, b=btn_editar_grupo: b.config(bg="#ffa726"))
+            
+            btn_duplicar_grupo = tk.Button(frame_acciones_grupo, text="Duplicar plato", font=("Roboto", 8, "bold"),
+                bg="#43a047", fg="white", relief="flat", bd=0, cursor="hand2",
+                activebackground="#2e7d32",
+                command=lambda g=grupo: duplicar_grupo(g))
+            btn_duplicar_grupo.pack(side="right", ipadx=4, ipady=2)
+            btn_duplicar_grupo.bind("<Enter>", lambda e, b=btn_duplicar_grupo: b.config(bg="#2e7d32"))
+            btn_duplicar_grupo.bind("<Leave>", lambda e, b=btn_duplicar_grupo: b.config(bg="#43a047"))
             
             # Hacer clickeable todo el header para seleccionar grupo
             def seleccionar_grupo(g=grupo):
@@ -871,17 +1342,17 @@ def actualizar_ticket():
             
             for widget in [frame_grupo_header, lbl_grupo]:
                 widget.bind("<Button-1>", lambda e, g=grupo: seleccionar_grupo(g))
-            tk.Label(columna_actual, text="Producto          | Cantidad | Precio", font=("Roboto", 11, "bold"), anchor="w", bg="#ffffff", fg="#3e2723").pack(anchor="w")
-            tk.Label(columna_actual, text="-" * 40, font=("Roboto", 11), anchor="w", bg="#ffffff", fg="#3e2723").pack(anchor="w")
+            tk.Label(frame_plato, text="Producto          | Cantidad | Precio", font=("Roboto", 11, "bold"), anchor="w", bg="#fffdf7", fg="#3e2723").pack(anchor="w", padx=8)
+            tk.Label(frame_plato, text="-" * 40, font=("Roboto", 11), anchor="w", bg="#fffdf7", fg="#3e2723").pack(anchor="w", padx=8)
             for item in items_agrupados[grupo]:
                 producto = item["nombre"][:18].ljust(18)
                 cantidad = str(item["cantidad"]).center(8)
                 precio = f"${item['precio']:.2f}".rjust(10)
                 texto = f"{producto} | {cantidad} | {precio}"
                 if item["anotacion"]: texto += f"\n{dividir_texto(item['anotacion'])}"
-                fila = tk.Frame(columna_actual, bg="#ffffff")
-                fila.pack(fill="x", pady=3)
-                tk.Label(fila, text=texto, anchor="w", justify="left", bg="#ffffff", font=("Roboto", 11), fg="#3e2723").pack(side="left", fill="x", expand=True)
+                fila = tk.Frame(frame_plato, bg="#fffdf7")
+                fila.pack(fill="x", pady=3, padx=8)
+                tk.Label(fila, text=texto, anchor="w", justify="left", bg="#fffdf7", font=("Roboto", 11), fg="#3e2723").pack(side="left", fill="x", expand=True)
                 idx = pedido_actual.index(item)
                 btn_eliminar = tk.Button(fila, text="X", fg="white", bg="#d32f2f", command=lambda idx=idx: eliminar_item(idx), width=3, relief="flat", font=("Roboto", 10))
                 btn_eliminar.pack(side="right")
@@ -1914,15 +2385,17 @@ ventana = tk.Tk()
 ventana.title("Tortas Ahogadas Doña Susy")
 screen_width = ventana.winfo_screenwidth()
 screen_height = ventana.winfo_screenheight()
-window_width = min(int(screen_width * 0.9), 1152)
-window_height = min(int(screen_height * 0.9), 648)
+window_width = min(int(screen_width * 0.95), 1152)
+window_height = min(int(screen_height * 0.98), 1100)
 ventana.geometry(f"{window_width}x{window_height}")
-ventana.minsize(1000, 600)
+min_width = min(1000, max(640, int(screen_width * 0.88)))
+min_height = min(700, max(560, int(screen_height * 0.65)))
+ventana.minsize(min_width, min_height)
 ventana.configure(bg="#e6d2a1")
 ventana.resizable(True, True)
 
 frame_principal = tk.Frame(ventana, bg="#e6d2a1")
-frame_principal.pack(fill="both", expand=True, padx=14, pady=14)
+frame_principal.pack(fill="both", expand=True, padx=10, pady=8)
 frame_principal.grid_columnconfigure(0, weight=3)
 frame_principal.grid_columnconfigure(1, weight=2)
 frame_principal.grid_rowconfigure(0, weight=1)
@@ -1930,7 +2403,7 @@ frame_principal.grid_rowconfigure(0, weight=1)
 panel_izquierdo = tk.Frame(frame_principal, bg="#ffffff", bd=1, relief="solid")
 panel_izquierdo.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 frame_superior_izq = tk.Frame(panel_izquierdo, bg="#ffffff")
-frame_superior_izq.pack(fill="both", padx=10, pady=10, expand=True)
+frame_superior_izq.pack(fill="both", padx=10, pady=6, expand=True)
 
 tk.Label(frame_superior_izq, text="Tortas Ahogadas Doña Susy", font=("Roboto", 17, "bold"), bg="#ffffff", fg="#d32f2f", pady=2).pack(anchor="w", fill="x")
 tk.Label(frame_superior_izq, text="Captura rápida de pedidos", font=("Roboto", 10), bg="#ffffff", fg="#6d4c41").pack(anchor="w", fill="x", pady=(0, 8))
@@ -2040,14 +2513,18 @@ def crear_tabs():
 
 # --- ÁREA DE CONTENIDO CON SCROLL ---
 frame_grid_wrapper = tk.Frame(frame_superior_izq, bg="#ffffff")
-frame_grid_wrapper.pack(fill="both", expand=True, pady=2)
+frame_grid_wrapper.pack(fill="x", expand=False, pady=(2, 4))
 
-canvas_grid = tk.Canvas(frame_grid_wrapper, bg="#ffffff", highlightthickness=0)
+canvas_grid = tk.Canvas(frame_grid_wrapper, bg="#ffffff", highlightthickness=0, height=265)
+if screen_height <= 720:
+    canvas_grid.configure(height=130)
+elif screen_height <= 800:
+    canvas_grid.configure(height=190)
 frame_grid_interior = tk.Frame(canvas_grid, bg="#ffffff")
 frame_grid_interior.bind("<Configure>", lambda e: canvas_grid.configure(scrollregion=canvas_grid.bbox("all")))
 grid_window_id = canvas_grid.create_window((0, 0), window=frame_grid_interior, anchor="nw")
 canvas_grid.bind("<Configure>", lambda e: canvas_grid.itemconfig(grid_window_id, width=e.width))
-canvas_grid.pack(fill="both", expand=True)
+canvas_grid.pack(fill="x", expand=False)
 
 # --- FUNCIÓN PARA CREAR TARJETA CUADRADA COMPACTA ---
 def crear_tarjeta(parent, row, col, nombre, precio_texto, descripcion, emoji, color_bg, color_hover, command):
@@ -2069,8 +2546,8 @@ def crear_tarjeta(parent, row, col, nombre, precio_texto, descripcion, emoji, co
     lbl_precio.pack(anchor="w", pady=(1, 0))
     
     # Descripción compacta
-    lbl_desc = tk.Label(inner, text=descripcion.replace(chr(10), ', '), font=("Roboto", 7),
-                        bg=color_bg, fg="#e0e0e0", anchor="w", justify="left")
+    lbl_desc = tk.Label(inner, text=descripcion, font=("Roboto", 7),
+                        bg=color_bg, fg="#e0e0e0", anchor="w", justify="left", wraplength=145)
     lbl_desc.pack(anchor="w", fill="x")
     
     # Hover effect para toda la tarjeta
@@ -2095,19 +2572,19 @@ def crear_tarjeta(parent, row, col, nombre, precio_texto, descripcion, emoji, co
 productos_comida = [
     {"nombre": "Torta Ahogada", "precio": f"${menu_productos.get('Torta', 55)}", "desc": "Carne, Buche, Lengua,\nMixta", "emoji": "🥩",
      "color": "#8B2500", "hover": "#701E00",
-     "command": lambda: mostrar_ventana_seleccion_carne(lambda carne: agregar_producto("Torta", carne))},
+     "command": lambda: mostrar_ventana_item_unificado("Torta", "carne")},
     {"nombre": "Torta Mini", "precio": f"${menu_productos.get('Torta Mini', 28)}", "desc": "Carne, Buche, Lengua,\nMixta", "emoji": "🥪",
      "color": "#A0522D", "hover": "#8B4513",
-     "command": lambda: mostrar_ventana_seleccion_carne(lambda carne: agregar_producto("Torta Mini", carne))},
-    {"nombre": "Taco Dorado\nSencillo", "precio": f"${menu_productos.get('Taco Dorado', 10)}", "desc": "Papa, Frijol, Requesón\ny Picadillo", "emoji": "🌮",
+     "command": lambda: mostrar_ventana_item_unificado("Torta Mini", "carne")},
+    {"nombre": "Taco Sencillo", "precio": f"${menu_productos.get('Taco Dorado', 10)}", "desc": "Papa, Frijol, Requesón\ny Picadillo", "emoji": "🌮",
      "color": "#BF6B00", "hover": "#A05A00",
-     "command": lambda: mostrar_ventana_tipo_taco(lambda tipo: agregar_producto("Taco Dorado", tipo))},
-    {"nombre": "Taco Dorado\nCon Carne", "precio": f"${menu_productos.get('Taco con Carne', 25)}", "desc": "Carne, Buche, Lengua,\nMixta", "emoji": "🌮",
+     "command": lambda: mostrar_ventana_item_unificado("Taco Dorado", "taco")},
+    {"nombre": "Taco Dorado c/Carne", "precio": f"${menu_productos.get('Taco con Carne', 25)}", "desc": "Carne, Buche, Lengua,\nMixta", "emoji": "🌮",
      "color": "#8B0000", "hover": "#700000",
-     "command": lambda: mostrar_ventana_seleccion_carne(lambda carne: mostrar_ventana_tipo_taco(lambda tipo: agregar_producto("Taco con Carne", f"{carne}, {tipo}")))},
+     "command": lambda: mostrar_ventana_item_unificado("Taco Dorado c/Carne", "carne_taco")},
     {"nombre": "Taco Blandito", "precio": f"${menu_productos.get('Taco Blandito', 25)}", "desc": "Carne, Buche, Lengua,\nMixta", "emoji": "🌮",
-     "color": "#A52A2A", "hover": "#8B1C1C",
-     "command": lambda: mostrar_ventana_seleccion_carne(lambda carne: agregar_producto("Taco Blandito", carne))},
+      "color": "#A52A2A", "hover": "#8B1C1C",
+     "command": lambda: mostrar_ventana_item_unificado("Taco Blandito", "carne")},
     {"nombre": "Carne\npor Gramos", "precio": "$$$", "desc": "Carne, Buche, Lengua,\nMixta", "emoji": "🥩",
      "color": "#6D4C41", "hover": "#5D4037",
      "command": agregar_carne_gramos},
@@ -2121,11 +2598,21 @@ productos_comida = [
 
 productos_paquetes = [
     {"nombre": "Paquete 1", "precio": f"${menu_productos.get('Paquete 1', 80)}", "desc": "Torta + Tacos\n+ Bebida", "emoji": "📦",
-     "color": "#2e7d32", "hover": "#1b5e20",
-     "command": lambda: mostrar_ventana_seleccion_carne(lambda carne: mostrar_ventana_tipo_taco(lambda tipo: mostrar_ventana_bebida_paquete("Paquete 1", carne, tipo)))},
+      "color": "#2e7d32", "hover": "#1b5e20",
+     "command": lambda: (lambda cs={"cantidad": 1}: mostrar_ventana_seleccion_carne(
+         lambda carne: mostrar_ventana_tipo_taco(
+             lambda tipo: mostrar_ventana_bebida_paquete("Paquete 1", carne, tipo, cs), cs
+         ),
+         cs
+     ))()},
     {"nombre": "Paquete 2", "precio": f"${menu_productos.get('Paquete 2', 85)}", "desc": "Torta + Tacos\n+ Bebida", "emoji": "📦",
-     "color": "#388e3c", "hover": "#2e7d32",
-     "command": lambda: mostrar_ventana_seleccion_carne(lambda carne: mostrar_ventana_tipo_taco(lambda tipo: mostrar_ventana_bebida_paquete("Paquete 2", carne, tipo)))},
+      "color": "#388e3c", "hover": "#2e7d32",
+     "command": lambda: (lambda cs={"cantidad": 1}: mostrar_ventana_seleccion_carne(
+         lambda carne: mostrar_ventana_tipo_taco(
+             lambda tipo: mostrar_ventana_bebida_paquete("Paquete 2", carne, tipo, cs), cs
+         ),
+         cs
+     ))()},
     {"nombre": "Paquete 3", "precio": f"${menu_productos.get('Paquete 3', 205)}", "desc": "Paquete familiar\nmediano", "emoji": "📦",
      "color": "#43a047", "hover": "#388e3c",
      "command": lambda: agregar_producto("Paquete 3")},
@@ -2139,14 +2626,14 @@ productos_paquetes = [
 
 productos_bebidas = [
     {"nombre": "Refresco", "precio": f"${menu_productos.get('Refresco', 25)}", "desc": "Coca, Fanta, Sprite,\nManzana, Coca Light", "emoji": "🥤",
-     "color": "#0288d1", "hover": "#0277bd",
-     "command": lambda: mostrar_ventana_refrescos("Refresco")},
+      "color": "#0288d1", "hover": "#0277bd",
+     "command": lambda: mostrar_ventana_item_unificado("Refresco", "refresco")},
     {"nombre": "Agua Chica", "precio": f"${menu_productos.get('Agua Chica', 15)}", "desc": "Jamaica, Horchata", "emoji": "💧",
-     "color": "#0277bd", "hover": "#01579b",
-     "command": lambda: mostrar_ventana_sabores("Agua Chica")},
+      "color": "#0277bd", "hover": "#01579b",
+     "command": lambda: mostrar_ventana_item_unificado("Agua Chica", "agua")},
     {"nombre": "Agua Grande", "precio": f"${menu_productos.get('Agua Grande', 25)}", "desc": "Jamaica, Horchata", "emoji": "💧",
-     "color": "#01579b", "hover": "#014377",
-     "command": lambda: mostrar_ventana_sabores("Agua Grande")},
+      "color": "#01579b", "hover": "#014377",
+     "command": lambda: mostrar_ventana_item_unificado("Agua Grande", "agua")},
     {"nombre": "Caguama", "precio": f"${menu_productos.get('Caguama', 70)}", "desc": "Cerveza tamaño\nfamiliar", "emoji": "🍺",
      "color": "#BF8C00", "hover": "#A07500",
      "command": lambda: agregar_producto("Caguama")},
