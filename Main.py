@@ -10,6 +10,7 @@ import copy
 import sqlite3
 import json
 from PIL import Image, ImageTk
+import subprocess
 
 # --- VARIABLES GLOBALES ---
 ventana_lista_instance = None  # Para controlar ventana única de lista
@@ -20,6 +21,7 @@ pedido_actual = []
 ventana_sabores = None
 label_datos_cliente = None
 mensaje_activo = False
+plato_counter = 0
 
 # Diccionario de productos (valores iniciales)
 menu_productos_default = {
@@ -717,13 +719,101 @@ def agregar_producto(nombre, sabor=None):
     tk.Button(ventana_item, text="Confirmar", font=("Roboto", 12), bg="#4caf50", fg="white", command=confirmar, width=15, pady=5).pack(pady=15)
     ventana_item.transient(ventana)
 
+def renombrar_grupo(nombre_viejo):
+    ventana_rename = tk.Toplevel(ventana)
+    ventana_rename.title("Editar Nombre")
+    ventana_rename.geometry("380x220")
+    ventana_rename.configure(bg="#faf2d3")
+    ventana_rename.resizable(False, False)
+    ventana_rename.transient(ventana)
+    ventana_rename.grab_set()
+    
+    # Header
+    header_rename = tk.Frame(ventana_rename, bg="#d32f2f", height=45)
+    header_rename.pack(fill="x")
+    header_rename.pack_propagate(False)
+    tk.Label(header_rename, text="✏️  Editar Nombre", font=("Roboto", 13, "bold"),
+             bg="#d32f2f", fg="white").pack(expand=True)
+    
+    # Contenido
+    frame_contenido = tk.Frame(ventana_rename, bg="#faf2d3")
+    frame_contenido.pack(fill="both", expand=True, padx=25, pady=15)
+    
+    tk.Label(frame_contenido, text=f"Nombre actual:  {nombre_viejo}", font=("Roboto", 10),
+             bg="#faf2d3", fg="#6d4c41").pack(anchor="w", pady=(0, 8))
+    
+    tk.Label(frame_contenido, text="Nuevo nombre:", font=("Roboto", 11, "bold"),
+             bg="#faf2d3", fg="#3e2723").pack(anchor="w", pady=(0, 4))
+    
+    entry_nuevo = tk.Entry(frame_contenido, font=("Roboto", 12), relief="solid", bd=1,
+                           bg="#ffffff", highlightthickness=2, highlightcolor="#d32f2f",
+                           highlightbackground="#d7c6a0")
+    entry_nuevo.pack(fill="x", ipady=4)
+    entry_nuevo.insert(0, nombre_viejo)
+    entry_nuevo.select_range(0, tk.END)
+    entry_nuevo.focus_set()
+    
+    # Botones
+    frame_btns = tk.Frame(frame_contenido, bg="#faf2d3")
+    frame_btns.pack(fill="x", pady=(15, 0))
+    
+    def confirmar_rename():
+        nuevo_nombre = entry_nuevo.get().strip()
+        if nuevo_nombre and nuevo_nombre != nombre_viejo:
+            if nombre_viejo in grupos:
+                idx = grupos.index(nombre_viejo)
+                grupos[idx] = nuevo_nombre
+            for item in pedido_actual:
+                if item.get("grupo") == nombre_viejo:
+                    item["grupo"] = nuevo_nombre
+            global grupo_actual
+            if grupo_actual == nombre_viejo:
+                grupo_actual = nuevo_nombre
+            ventana_rename.destroy()
+            actualizar_ticket()
+        elif not nuevo_nombre:
+            entry_nuevo.config(highlightcolor="#ff0000", highlightbackground="#ff0000")
+        else:
+            ventana_rename.destroy()
+    
+    btn_cancelar = tk.Button(frame_btns, text="Cancelar", font=("Roboto", 10, "bold"),
+                             bg="#e0e0e0", fg="#3e2723", relief="flat", padx=16, pady=4,
+                             command=ventana_rename.destroy, cursor="hand2")
+    btn_cancelar.pack(side="left", padx=(0, 8))
+    btn_cancelar.bind("<Enter>", lambda e: btn_cancelar.config(bg="#bdbdbd"))
+    btn_cancelar.bind("<Leave>", lambda e: btn_cancelar.config(bg="#e0e0e0"))
+    
+    btn_guardar = tk.Button(frame_btns, text="Guardar", font=("Roboto", 10, "bold"),
+                            bg="#4caf50", fg="white", relief="flat", padx=16, pady=4,
+                            command=confirmar_rename, cursor="hand2")
+    btn_guardar.pack(side="right")
+    btn_guardar.bind("<Enter>", lambda e: btn_guardar.config(bg="#388e3c"))
+    btn_guardar.bind("<Leave>", lambda e: btn_guardar.config(bg="#4caf50"))
+    
+    entry_nuevo.bind("<Return>", lambda e: confirmar_rename())
+    entry_nuevo.bind("<Escape>", lambda e: ventana_rename.destroy())
+
 def crear_grupo():
-    global grupo_actual
-    nombre = simpledialog.askstring("Nuevo grupo", "Nombre del grupo (ej. Ana):", parent=ventana)
-    if nombre:
-        grupo_actual = nombre
-        if nombre not in grupos: grupos.append(nombre)
-        actualizar_ticket()
+    global grupo_actual, plato_counter
+    plato_counter += 1
+    nombre = f"Plato {plato_counter}"
+    grupo_actual = nombre
+    if nombre not in grupos: grupos.append(nombre)
+    actualizar_ticket()
+
+def duplicar_grupo(grupo_origen):
+    global grupo_actual, plato_counter
+    plato_counter += 1
+    nuevo_nombre = f"Plato {plato_counter}"
+    # Copiar todos los items del grupo origen al nuevo grupo
+    items_a_copiar = [item for item in pedido_actual if item.get("grupo") == grupo_origen]
+    for item in items_a_copiar:
+        nuevo_item = copy.deepcopy(item)
+        nuevo_item["grupo"] = nuevo_nombre
+        pedido_actual.append(nuevo_item)
+    grupo_actual = nuevo_nombre
+    if nuevo_nombre not in grupos: grupos.append(nuevo_nombre)
+    actualizar_ticket()
 
 def actualizar_ticket():
     for widget in frame_resumen.winfo_children(): widget.destroy()
@@ -746,7 +836,41 @@ def actualizar_ticket():
             grupo = item.get("grupo", "General")
             items_agrupados.setdefault(grupo, []).append(item)
         for grupo in sorted(items_agrupados.keys(), key=lambda x: (x == "General", x)):
-            tk.Label(columna_actual, text=f"Grupo: {grupo}", font=("Roboto", 12, "bold"), anchor="w", bg="#ffffff", fg="#3e2723").pack(anchor="w", pady=5)
+            es_activo = (grupo == grupo_actual)
+            bg_header = "#ffd54f" if es_activo else "#f5f0e0"
+            fg_header = "#3e2723"
+            frame_grupo_header = tk.Frame(columna_actual, bg=bg_header, cursor="hand2", bd=1, relief="solid")
+            frame_grupo_header.pack(fill="x", pady=(8, 2))
+            
+            # Indicador de selección
+            indicador = "▸ " if es_activo else "  "
+            lbl_grupo = tk.Label(frame_grupo_header, text=f"{indicador}{grupo}", font=("Roboto", 11, "bold"),
+                anchor="w", bg=bg_header, fg=fg_header, padx=6, pady=4)
+            lbl_grupo.pack(side="left")
+            
+            if grupo != "General":
+                btn_editar_grupo = tk.Button(frame_grupo_header, text="Editar nombre", font=("Roboto", 8),
+                    bg=bg_header, fg="#5d4037", relief="flat", bd=0, cursor="hand2",
+                    activebackground=bg_header,
+                    command=lambda g=grupo: renombrar_grupo(g))
+                btn_editar_grupo.pack(side="right", padx=(3, 6))
+                
+                btn_duplicar_grupo = tk.Button(frame_grupo_header, text="Duplicar plato", font=("Roboto", 8),
+                    bg=bg_header, fg="#2e7d32", relief="flat", bd=0, cursor="hand2",
+                    activebackground=bg_header,
+                    command=lambda g=grupo: duplicar_grupo(g))
+                btn_duplicar_grupo.pack(side="right", padx=3)
+            
+            # Hacer clickeable todo el header para seleccionar grupo
+            def seleccionar_grupo(g=grupo):
+                global grupo_actual
+                grupo_actual = g
+                if g not in grupos:
+                    grupos.append(g)
+                actualizar_ticket()
+            
+            for widget in [frame_grupo_header, lbl_grupo]:
+                widget.bind("<Button-1>", lambda e, g=grupo: seleccionar_grupo(g))
             tk.Label(columna_actual, text="Producto          | Cantidad | Precio", font=("Roboto", 11, "bold"), anchor="w", bg="#ffffff", fg="#3e2723").pack(anchor="w")
             tk.Label(columna_actual, text="-" * 40, font=("Roboto", 11), anchor="w", bg="#ffffff", fg="#3e2723").pack(anchor="w")
             for item in items_agrupados[grupo]:
@@ -1689,7 +1813,7 @@ def mostrar_lista_pedidos():
     cargar_datos()
 
 def limpiar_pedido():
-    global ventana_sabores, hora_especifica, grupo_actual, grupos
+    global ventana_sabores, hora_especifica, grupo_actual, grupos, plato_counter
     pedido_actual.clear()
     for widget in frame_resumen.winfo_children(): widget.destroy()
     entry_domicilio.delete(0, tk.END)
@@ -1704,6 +1828,7 @@ def limpiar_pedido():
         ventana_sabores = None
     grupo_actual = "General"
     grupos = ["General"]
+    plato_counter = 0
     actualizar_ticket()
 
 def cambiar_contrasena():
@@ -1856,120 +1981,241 @@ def actualizar_hora(event):
     else: hora_especifica = None
 entry_hora.bind("<KeyRelease>", actualizar_hora)
 
-tk.Label(frame_superior_izq, text="Selecciona productos por categoría:", bg="#ffffff", font=("Roboto", 12, "bold"), fg="#3e2723").pack(pady=(8, 5), fill="x")
+# --- TECLADO VIRTUAL DE WINDOWS 11 ---
+_campos_cliente = None
 
-frame_botones = tk.Frame(frame_superior_izq, bg="#ffffff")
-frame_botones.pack(fill="both", expand=True, pady=5)
-for i in range(4): frame_botones.grid_columnconfigure(i, weight=1, minsize=150)
+def abrir_teclado_virtual(event=None):
+    try:
+        tabtip = r"C:\Program Files\Common Files\microsoft shared\ink\TabTip.exe"
+        if os.path.exists(tabtip):
+            subprocess.Popen([tabtip], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
 
-bebidas = ["Refresco", "Agua Chica", "Agua Grande", "Caguama", "Cerveza"]
-comida = ["Torta", "Taco Dorado", "Taco Blandito", "Taco con Carne"]
-paquetes = ["Paquete 1", "Paquete 2", "Paquete 3", "Paquete 4", "Paquete 5"]
+# Bind focus SOLO a los campos de datos del cliente
+entry_domicilio.bind("<FocusIn>", abrir_teclado_virtual)
+entry_telefono.bind("<FocusIn>", abrir_teclado_virtual)
+entry_cruces.bind("<FocusIn>", abrir_teclado_virtual)
+entry_hora.bind("<FocusIn>", abrir_teclado_virtual)
 
-frame_bebidas = tk.Frame(frame_botones, bg="#ffffff")
-frame_bebidas.grid(row=0, column=0, padx=3, sticky="nsew")
-tk.Label(frame_bebidas, text="Bebidas", font=("Roboto", 11, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=2)
-colores_bebidas = [
-    ("#0288d1", "#0277bd"),
-    ("#0277bd", "#01579b")
+# --- MENÚ CON PESTAÑAS Y TARJETAS CUADRADAS ---
+tk.Label(frame_superior_izq, text="Menú", bg="#ffffff", font=("Roboto", 16, "bold"), fg="#3e2723").pack(pady=(8, 6), anchor="w", padx=5)
+
+# --- BARRA DE PESTAÑAS ---
+frame_tabs = tk.Frame(frame_superior_izq, bg="#ffffff")
+frame_tabs.pack(fill="x", padx=5, pady=(0, 8))
+
+tab_actual = tk.StringVar(value="comida")
+
+def crear_tabs():
+    for widget in frame_tabs.winfo_children():
+        widget.destroy()
+    
+    tabs_config = [
+        ("comida", "🍽️  Comida", "#d32f2f", "#b71c1c"),
+        ("paquetes", "📦  Paquetes", "#2e7d32", "#1b5e20"),
+        ("bebidas", "🥤  Bebidas", "#0288d1", "#01579b"),
+    ]
+    
+    for tab_id, texto, color_activo, color_hover in tabs_config:
+        es_activo = tab_actual.get() == tab_id
+        if es_activo:
+            btn = tk.Button(frame_tabs, text=texto, font=("Roboto", 11, "bold"),
+                           bg=color_activo, fg="white", relief="flat",
+                           activebackground=color_hover, cursor="hand2",
+                           bd=0, padx=20, pady=8,
+                           command=lambda t=tab_id: cambiar_tab(t))
+            btn.pack(side="left", padx=(0, 4))
+            btn.bind("<Enter>", lambda e, b=btn, c=color_hover: b.config(bg=c))
+            btn.bind("<Leave>", lambda e, b=btn, c=color_activo: b.config(bg=c))
+        else:
+            btn = tk.Button(frame_tabs, text=texto, font=("Roboto", 11),
+                           bg="#f5f0e0", fg="#3e2723", relief="flat",
+                           activebackground="#e8e0c8", cursor="hand2",
+                           bd=0, padx=20, pady=8,
+                           command=lambda t=tab_id: cambiar_tab(t))
+            btn.pack(side="left", padx=(0, 4))
+            btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#e8e0c8"))
+            btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#f5f0e0"))
+
+# --- ÁREA DE CONTENIDO CON SCROLL ---
+frame_grid_wrapper = tk.Frame(frame_superior_izq, bg="#ffffff")
+frame_grid_wrapper.pack(fill="both", expand=True, pady=2)
+
+canvas_grid = tk.Canvas(frame_grid_wrapper, bg="#ffffff", highlightthickness=0)
+frame_grid_interior = tk.Frame(canvas_grid, bg="#ffffff")
+frame_grid_interior.bind("<Configure>", lambda e: canvas_grid.configure(scrollregion=canvas_grid.bbox("all")))
+grid_window_id = canvas_grid.create_window((0, 0), window=frame_grid_interior, anchor="nw")
+canvas_grid.bind("<Configure>", lambda e: canvas_grid.itemconfig(grid_window_id, width=e.width))
+canvas_grid.pack(fill="both", expand=True)
+
+# --- FUNCIÓN PARA CREAR TARJETA CUADRADA COMPACTA ---
+def crear_tarjeta(parent, row, col, nombre, precio_texto, descripcion, emoji, color_bg, color_hover, command):
+    card = tk.Frame(parent, bg=color_bg, bd=0, cursor="hand2", relief="flat")
+    card.grid(row=row, column=col, padx=3, pady=3, sticky="nsew")
+    
+    # Contenido interno compacto
+    inner = tk.Frame(card, bg=color_bg)
+    inner.pack(fill="both", expand=True, padx=6, pady=5)
+    
+    # Fila superior: emoji + nombre
+    lbl_nombre = tk.Label(inner, text=f"{emoji} {nombre.replace(chr(10), ' ')}", font=("Roboto", 9, "bold"),
+                          bg=color_bg, fg="white", anchor="w", justify="left")
+    lbl_nombre.pack(anchor="w", fill="x")
+    
+    # Precio
+    lbl_precio = tk.Label(inner, text=precio_texto, font=("Roboto", 11, "bold"),
+                          bg=color_bg, fg="#ffd54f", anchor="w")
+    lbl_precio.pack(anchor="w", pady=(1, 0))
+    
+    # Descripción compacta
+    lbl_desc = tk.Label(inner, text=descripcion.replace(chr(10), ', '), font=("Roboto", 7),
+                        bg=color_bg, fg="#e0e0e0", anchor="w", justify="left")
+    lbl_desc.pack(anchor="w", fill="x")
+    
+    # Hover effect para toda la tarjeta
+    all_widgets = [card, inner, lbl_nombre, lbl_precio, lbl_desc]
+    
+    def on_enter(e):
+        for w in all_widgets:
+            try: w.config(bg=color_hover)
+            except: pass
+    
+    def on_leave(e):
+        for w in all_widgets:
+            try: w.config(bg=color_bg)
+            except: pass
+    
+    for w in all_widgets:
+        w.bind("<Enter>", on_enter)
+        w.bind("<Leave>", on_leave)
+        w.bind("<Button-1>", lambda e: command())
+
+# --- DATOS DE PRODUCTOS POR CATEGORÍA ---
+productos_comida = [
+    {"nombre": "Torta Ahogada", "precio": f"${menu_productos.get('Torta', 55)}", "desc": "Carne, Buche, Lengua,\nMixta", "emoji": "🥩",
+     "color": "#8B2500", "hover": "#701E00",
+     "command": lambda: mostrar_ventana_seleccion_carne(lambda carne: agregar_producto("Torta", carne))},
+    {"nombre": "Torta Mini", "precio": f"${menu_productos.get('Torta Mini', 28)}", "desc": "Carne, Buche, Lengua,\nMixta", "emoji": "🥪",
+     "color": "#A0522D", "hover": "#8B4513",
+     "command": lambda: mostrar_ventana_seleccion_carne(lambda carne: agregar_producto("Torta Mini", carne))},
+    {"nombre": "Taco Dorado\nSencillo", "precio": f"${menu_productos.get('Taco Dorado', 10)}", "desc": "Papa, Frijol, Requesón\ny Picadillo", "emoji": "🌮",
+     "color": "#BF6B00", "hover": "#A05A00",
+     "command": lambda: mostrar_ventana_tipo_taco(lambda tipo: agregar_producto("Taco Dorado", tipo))},
+    {"nombre": "Taco Dorado\nCon Carne", "precio": f"${menu_productos.get('Taco con Carne', 25)}", "desc": "Carne, Buche, Lengua,\nMixta", "emoji": "🌮",
+     "color": "#8B0000", "hover": "#700000",
+     "command": lambda: mostrar_ventana_seleccion_carne(lambda carne: mostrar_ventana_tipo_taco(lambda tipo: agregar_producto("Taco con Carne", f"{carne}, {tipo}")))},
+    {"nombre": "Taco Blandito", "precio": f"${menu_productos.get('Taco Blandito', 25)}", "desc": "Carne, Buche, Lengua,\nMixta", "emoji": "🌮",
+     "color": "#A52A2A", "hover": "#8B1C1C",
+     "command": lambda: mostrar_ventana_seleccion_carne(lambda carne: agregar_producto("Taco Blandito", carne))},
+    {"nombre": "Carne\npor Gramos", "precio": "$$$", "desc": "Carne, Buche, Lengua,\nMixta", "emoji": "🥩",
+     "color": "#6D4C41", "hover": "#5D4037",
+     "command": agregar_carne_gramos},
+    {"nombre": "Nuevo Ítem", "precio": "Custom", "desc": "Agrega un producto\npersonalizado", "emoji": "➕",
+     "color": "#ff8f00", "hover": "#ef6c00",
+     "command": agregar_nuevo_item},
+    {"nombre": "Descuento", "precio": "- $", "desc": "Aplica un descuento\nal pedido", "emoji": "💲",
+     "color": "#ff6f00", "hover": "#e65100",
+     "command": agregar_descuento},
 ]
-for nombre in bebidas:
-    btn = tk.Button(frame_bebidas, text=nombre, font=("Roboto", 12), bg="#ff6f00", fg="white", relief="flat", activebackground="#ef6c00",
-                    command=lambda n=nombre: mostrar_ventana_sabores(n) if n in ["Agua Chica", "Agua Grande"]
-                    else mostrar_ventana_refrescos(n) if n == "Refresco"
-                    else agregar_producto(n))
-    btn.pack(pady=3, padx=5, fill="x")
-    color_base, color_hover = colores_bebidas[len(frame_bebidas.winfo_children()) % 2]
-    aplicar_estilo_boton(btn, color_base, color_hover)
 
-frame_comida = tk.Frame(frame_botones, bg="#ffffff")
-frame_comida.grid(row=0, column=1, padx=3, sticky="nsew")
-tk.Label(frame_comida, text="Comida", font=("Roboto", 11, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=2)
-colores_comida = [
-    ("#d32f2f", "#c62828"),
-    ("#c62828", "#b71c1c")
+productos_paquetes = [
+    {"nombre": "Paquete 1", "precio": f"${menu_productos.get('Paquete 1', 80)}", "desc": "Torta + Tacos\n+ Bebida", "emoji": "📦",
+     "color": "#2e7d32", "hover": "#1b5e20",
+     "command": lambda: mostrar_ventana_seleccion_carne(lambda carne: mostrar_ventana_tipo_taco(lambda tipo: mostrar_ventana_bebida_paquete("Paquete 1", carne, tipo)))},
+    {"nombre": "Paquete 2", "precio": f"${menu_productos.get('Paquete 2', 85)}", "desc": "Torta + Tacos\n+ Bebida", "emoji": "📦",
+     "color": "#388e3c", "hover": "#2e7d32",
+     "command": lambda: mostrar_ventana_seleccion_carne(lambda carne: mostrar_ventana_tipo_taco(lambda tipo: mostrar_ventana_bebida_paquete("Paquete 2", carne, tipo)))},
+    {"nombre": "Paquete 3", "precio": f"${menu_productos.get('Paquete 3', 205)}", "desc": "Paquete familiar\nmediano", "emoji": "📦",
+     "color": "#43a047", "hover": "#388e3c",
+     "command": lambda: agregar_producto("Paquete 3")},
+    {"nombre": "Paquete 4", "precio": f"${menu_productos.get('Paquete 4', 320)}", "desc": "Paquete familiar\ngrande", "emoji": "📦",
+     "color": "#4caf50", "hover": "#43a047",
+     "command": lambda: agregar_producto("Paquete 4")},
+    {"nombre": "Paquete 5", "precio": f"${menu_productos.get('Paquete 5', 630)}", "desc": "Paquete familiar\nextra grande", "emoji": "📦",
+     "color": "#2e7d32", "hover": "#1b5e20",
+     "command": lambda: agregar_producto("Paquete 5")},
 ]
-for nombre in comida:
-    if nombre == "Torta": command = lambda n=nombre: mostrar_ventana_seleccion_carne(lambda carne: agregar_producto(n, carne))
-    elif nombre == "Taco Dorado": command = lambda n=nombre: mostrar_ventana_tipo_taco(lambda tipo: agregar_producto(n, tipo))
-    elif nombre == "Taco Blandito": command = lambda n=nombre: mostrar_ventana_seleccion_carne(lambda carne: agregar_producto(n, carne))
-    elif nombre == "Taco con Carne": command = lambda n=nombre: mostrar_ventana_seleccion_carne(lambda carne: mostrar_ventana_tipo_taco(lambda tipo: agregar_producto(n, f"{carne}, {tipo}")))
-    else: command = lambda n=nombre: agregar_producto(n)
-    btn = tk.Button(frame_comida, text=nombre, font=("Roboto", 12), bg="#ff6f00", fg="white", relief="flat", activebackground="#ef6c00", command=command)
-    btn.pack(pady=3, padx=5, fill="x")
-    color_base, color_hover = colores_comida[len(frame_comida.winfo_children()) % 2]
-    aplicar_estilo_boton(btn, color_base, color_hover)
 
-btn_carne_gramos = tk.Button(frame_comida, text="Carne(Gramos)", font=("Roboto", 12), bg="#ff6f00", fg="white", relief="flat", activebackground="#ef6c00", command=agregar_carne_gramos)
-btn_carne_gramos.pack(pady=3, padx=5, fill="x")
-color_base, color_hover = colores_comida[len(frame_comida.winfo_children()) % 2]
-aplicar_estilo_boton(btn_carne_gramos, color_base, color_hover)
-
-frame_paquetes = tk.Frame(frame_botones, bg="#ffffff")
-frame_paquetes.grid(row=0, column=2, padx=3, sticky="nsew")
-tk.Label(frame_paquetes, text="Paquetes", font=("Roboto", 11, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=2)
-colores_paquetes = [
-    ("#2e7d32", "#1b5e20"),
-    ("#388e3c", "#2e7d32")
+productos_bebidas = [
+    {"nombre": "Refresco", "precio": f"${menu_productos.get('Refresco', 25)}", "desc": "Coca, Fanta, Sprite,\nManzana, Coca Light", "emoji": "🥤",
+     "color": "#0288d1", "hover": "#0277bd",
+     "command": lambda: mostrar_ventana_refrescos("Refresco")},
+    {"nombre": "Agua Chica", "precio": f"${menu_productos.get('Agua Chica', 15)}", "desc": "Jamaica, Horchata", "emoji": "💧",
+     "color": "#0277bd", "hover": "#01579b",
+     "command": lambda: mostrar_ventana_sabores("Agua Chica")},
+    {"nombre": "Agua Grande", "precio": f"${menu_productos.get('Agua Grande', 25)}", "desc": "Jamaica, Horchata", "emoji": "💧",
+     "color": "#01579b", "hover": "#014377",
+     "command": lambda: mostrar_ventana_sabores("Agua Grande")},
+    {"nombre": "Caguama", "precio": f"${menu_productos.get('Caguama', 70)}", "desc": "Cerveza tamaño\nfamiliar", "emoji": "🍺",
+     "color": "#BF8C00", "hover": "#A07500",
+     "command": lambda: agregar_producto("Caguama")},
+    {"nombre": "Cerveza", "precio": f"${menu_productos.get('Cerveza', 25)}", "desc": "Cerveza individual", "emoji": "🍺",
+     "color": "#D4A017", "hover": "#BF8C00",
+     "command": lambda: agregar_producto("Cerveza")},
 ]
-for nombre in paquetes:
-    if nombre in ["Paquete 1", "Paquete 2"]:
-        command = lambda n=nombre: mostrar_ventana_seleccion_carne(lambda carne: mostrar_ventana_tipo_taco(lambda tipo: mostrar_ventana_bebida_paquete(n, carne, tipo)))
-    else: command = lambda n=nombre: agregar_producto(n)
-    btn = tk.Button(frame_paquetes, text=nombre, font=("Roboto", 12), bg="#ff6f00", fg="white", relief="flat", activebackground="#ef6c00", command=command)
-    btn.pack(pady=3, padx=5, fill="x")
-    color_base, color_hover = colores_paquetes[len(frame_paquetes.winfo_children()) % 2]
-    aplicar_estilo_boton(btn, color_base, color_hover)
 
-frame_nuevo_item = tk.Frame(frame_botones, bg="#ffffff")
-frame_nuevo_item.grid(row=0, column=3, padx=3, sticky="nsew")
-tk.Label(frame_nuevo_item, text="Otros", font=("Roboto", 11, "bold"), bg="#ffffff", fg="#d32f2f").pack(pady=2)
-colores_otros = [
-    ("#ff8f00", "#ef6c00"),
-    ("#ef6c00", "#e65100")
-]
-btn_nuevo_item = tk.Button(frame_nuevo_item, text="Nuevo Ítem", font=("Roboto", 12), bg="#ff6f00", fg="white", relief="flat", activebackground="#ef6c00", command=agregar_nuevo_item)
-btn_nuevo_item.pack(pady=3, padx=5, fill="x")
-color_base, color_hover = colores_otros[len(frame_nuevo_item.winfo_children()) % 2]
-aplicar_estilo_boton(btn_nuevo_item, color_base, color_hover)
+categorias_productos = {
+    "comida": productos_comida,
+    "paquetes": productos_paquetes,
+    "bebidas": productos_bebidas,
+}
 
-btn_descuento = tk.Button(frame_nuevo_item, text="Descuento", font=("Roboto", 12), bg="#ff6f00", fg="white", relief="flat", activebackground="#ef6c00", command=agregar_descuento)
-btn_descuento.pack(pady=3, padx=5, fill="x")
-color_base, color_hover = colores_otros[len(frame_nuevo_item.winfo_children()) % 2]
-aplicar_estilo_boton(btn_descuento, color_base, color_hover)
+def mostrar_productos_tab():
+    # Limpiar grid
+    for widget in frame_grid_interior.winfo_children():
+        widget.destroy()
+    
+    productos = categorias_productos.get(tab_actual.get(), [])
+    num_cols = 4
+    
+    for c in range(num_cols):
+        frame_grid_interior.columnconfigure(c, weight=1, uniform="card")
+    
+    for i, prod in enumerate(productos):
+        row = i // num_cols
+        col = i % num_cols
+        frame_grid_interior.rowconfigure(row, weight=1, uniform="cardrow")
+        crear_tarjeta(
+            frame_grid_interior, row, col,
+            prod["nombre"], prod["precio"], prod["desc"], prod["emoji"],
+            prod["color"], prod["hover"], prod["command"]
+        )
 
-btn_torta_mini = tk.Button(frame_nuevo_item, text="Torta Mini", font=("Roboto", 12), bg="#ff6f00", fg="white", relief="flat", activebackground="#ef6c00", command=lambda n="Torta Mini": mostrar_ventana_seleccion_carne(lambda carne: agregar_producto(n, carne)))
-btn_torta_mini.pack(pady=3, padx=5, fill="x")
-color_base, color_hover = colores_otros[len(frame_nuevo_item.winfo_children()) % 2]
-aplicar_estilo_boton(btn_torta_mini, color_base, color_hover)
+def cambiar_tab(tab_id):
+    tab_actual.set(tab_id)
+    crear_tabs()
+    mostrar_productos_tab()
+
+# Inicializar tabs y productos
+crear_tabs()
+mostrar_productos_tab()
 
 # --- SECCIÓN DE ACCIONES ---
 frame_acciones = tk.Frame(frame_superior_izq, bg="#ffffff")
-frame_acciones.pack(fill="both", expand=True, pady=10)
+frame_acciones.pack(fill="x", pady=(4, 2))
 
 frame_acciones.columnconfigure(0, weight=1)
 frame_acciones.columnconfigure(1, weight=1)
-frame_acciones.rowconfigure(0, weight=1)
-frame_acciones.rowconfigure(1, weight=1)
 
 btn_agregar_cliente = tk.Button(frame_acciones, text="Agregar Cliente", command=crear_grupo, 
                                 bg="#4caf50", fg="white", font=("Roboto", 11, "bold"), relief="flat")
-btn_agregar_cliente.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+btn_agregar_cliente.grid(row=0, column=0, padx=5, pady=3, sticky="ew")
 aplicar_estilo_boton(btn_agregar_cliente, "#4caf50", "#388e3c")
 
 btn_imprimir_ticket = tk.Button(frame_acciones, text="Imprimir Ticket", command=imprimir_ticket, 
                                 bg="#4caf50", fg="white", font=("Roboto", 11, "bold"), relief="flat")
-btn_imprimir_ticket.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
+btn_imprimir_ticket.grid(row=0, column=1, padx=5, pady=3, sticky="ew")
 aplicar_estilo_boton(btn_imprimir_ticket, "#4caf50", "#388e3c")
 
 btn_limpiar_pedido = tk.Button(frame_acciones, text="Limpiar Pedido", command=limpiar_pedido, 
                                bg="#d32f2f", fg="white", font=("Roboto", 11, "bold"), relief="flat")
-btn_limpiar_pedido.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
+btn_limpiar_pedido.grid(row=1, column=0, padx=5, pady=3, sticky="ew")
 aplicar_estilo_boton(btn_limpiar_pedido, "#d32f2f", "#b71c1c")
 
 btn_lista = tk.Button(frame_acciones, text="Lista de Pedidos", command=mostrar_lista_pedidos, 
                       bg="#0288d1", fg="white", font=("Roboto", 11, "bold"), relief="flat")
-btn_lista.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
+btn_lista.grid(row=1, column=1, padx=5, pady=3, sticky="ew")
 aplicar_estilo_boton(btn_lista, "#0288d1", "#01579b")
 
 # --- FOOTER ---
