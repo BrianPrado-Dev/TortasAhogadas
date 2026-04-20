@@ -55,7 +55,7 @@ def resolver_ruta(ruta_relativa):
     try:
         base_path = sys._MEIPASS
     except Exception:
-        base_path = os.path.abspath(".")
+        base_path = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_path, ruta_relativa)
 
 def cargar_icono(ruta_archivo, size=(100, 100)):
@@ -367,33 +367,30 @@ def mostrar_ventana_sabores(nombre, callback=None):
     if ventana_sabores: ventana_sabores.destroy()
     ventana_sabores = tk.Toplevel(ventana)
     ventana_sabores.title("Seleccionar Sabor")
-    window_width = max(int(screen_width * 0.35), 400)
-    window_height = max(int(screen_height * 0.35), 300)
-    ventana_sabores.geometry(f"{window_width}x{window_height}")
+    ventana_sabores.geometry("550x400")
     ventana_sabores.configure(bg="#e6d2a1")
-    ventana_sabores.resizable(True, True)
-    ventana_sabores.minsize(400, 300)
+    ventana_sabores.resizable(False, False)
     tk.Label(ventana_sabores, text=f"Selecciona el sabor para {nombre}", font=("Roboto", 14, "bold"), bg="#e6d2a1", fg="#3e2723").pack(pady=20, fill="x")
     frame_btn_sabores = tk.Frame(ventana_sabores, bg="#e6d2a1")
     frame_btn_sabores.pack(pady=20, fill="both", expand=True, padx=30)
     frame_btn_sabores.grid_columnconfigure(0, weight=1)
     frame_btn_sabores.grid_columnconfigure(1, weight=1)
     frame_btn_sabores.grid_rowconfigure(0, weight=1)
-    btn_jamaica = tk.Button(frame_btn_sabores, text="JAMAICA", font=("Roboto", 14, "bold"),
+    btn_jamaica = tk.Button(frame_btn_sabores, text="JAMAICA", font=("Roboto", 16, "bold"),
                             bg="#9c0000", fg="white", relief="flat", activebackground="#7a0000",
                             command=lambda: [callback("Jamaica") if callback else agregar_producto(nombre, "Jamaica"), ventana_sabores.destroy()])
-    btn_jamaica.grid(row=0, column=0, padx=15, pady=15, sticky="nsew")
+    btn_jamaica.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
     btn_jamaica.bind("<Enter>", lambda e: btn_jamaica.config(bg="#7a0000"))
     btn_jamaica.bind("<Leave>", lambda e: btn_jamaica.config(bg="#9c0000"))
-    btn_horchata = tk.Button(frame_btn_sabores, text="HORCHATA", font=("Roboto", 14, "bold"),
+    btn_horchata = tk.Button(frame_btn_sabores, text="HORCHATA", font=("Roboto", 16, "bold"),
                              bg="#ffffff", fg="black", relief="flat", activebackground="#a8a4a4",
                              command=lambda: [callback("Horchata") if callback else agregar_producto(nombre, "Horchata"), ventana_sabores.destroy()])
-    btn_horchata.grid(row=0, column=1, padx=15, pady=15, sticky="nsew")
+    btn_horchata.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
     btn_horchata.bind("<Enter>", lambda e: btn_horchata.config(bg="#a8a4a4"))
     btn_horchata.bind("<Leave>", lambda e: btn_horchata.config(bg="#ffffff"))
-    frame_btn_sabores.grid_rowconfigure(0, weight=1, minsize=120)
-    frame_btn_sabores.grid_columnconfigure(0, weight=1, minsize=120)
-    frame_btn_sabores.grid_columnconfigure(1, weight=1, minsize=120)
+    frame_btn_sabores.grid_rowconfigure(0, weight=1, minsize=150)
+    frame_btn_sabores.grid_columnconfigure(0, weight=1, minsize=180)
+    frame_btn_sabores.grid_columnconfigure(1, weight=1, minsize=180)
     ventana_sabores.protocol("WM_DELETE_WINDOW", lambda: ventana_sabores.destroy())
 
 def mostrar_ventana_refrescos(nombre, callback=None):
@@ -403,11 +400,9 @@ def mostrar_ventana_refrescos(nombre, callback=None):
 
     ventana_sabores = tk.Toplevel(ventana)
     ventana_sabores.title("Seleccionar Refresco")
-    window_width = max(int(screen_width * 0.45), 500)
-    window_height = max(int(screen_height * 0.4), 350)
-    ventana_sabores.geometry(f"{window_width}x{window_height}")
+    ventana_sabores.geometry("620x580")
     ventana_sabores.configure(bg="#e6d2a1")
-    ventana_sabores.resizable(True, True)
+    ventana_sabores.resizable(False, False)
 
     tk.Label(ventana_sabores, text=f"Selecciona el tipo de {nombre}",
              font=("Roboto", 14, "bold"), bg="#e6d2a1", fg="#3e2723").pack(pady=15, fill="x")
@@ -422,15 +417,17 @@ def mostrar_ventana_refrescos(nombre, callback=None):
     frame_btn_refrescos.grid_rowconfigure(2, weight=1) 
 
     # --- CARGAR IMÁGENES ---
-    img_coca = cargar_icono("coca.png", size=(100, 100)) 
-    img_fanta = cargar_icono("fanta.png", size=(100, 100))
-    img_mundet = cargar_icono("mundet.png", size=(100, 100))
-    img_sprite = cargar_icono("sprite.png", size=(100, 100))
-    img_coca_light = cargar_icono("cocalight.png", size=(100, 100))
+    img_coca = cargar_icono("coca.png", size=(80, 80)) 
+    img_fanta = cargar_icono("fanta.png", size=(80, 80))
+    img_mundet = cargar_icono("mundet.png", size=(80, 80))
+    img_sprite = cargar_icono("sprite.png", size=(80, 80))
+    img_coca_light = cargar_icono("cocalight.png", size=(80, 80))
 
-    # --- CONFIGURACIÓN DE BOTONES ---
+    # --- CONFIGURACIÓN DE BOTONES (compound="top" muestra imagen Y texto) ---
     btn_coca = tk.Button(frame_btn_refrescos, bg="#d32f2f", activebackground="#b71c1c",
-                         image=img_coca if img_coca else None, text="" if img_coca else "COCA",
+                         image=img_coca if img_coca else None, text="COCA",
+                         compound="top" if img_coca else None,
+                         font=("Roboto", 12, "bold"), fg="white",
                          command=lambda: [callback("COCA") if callback else agregar_producto(nombre, "COCA"), ventana_sabores.destroy()])
     if img_coca: btn_coca.image = img_coca 
     btn_coca.grid(row=0, column=0, padx=8, pady=8, sticky="nsew")
@@ -438,7 +435,9 @@ def mostrar_ventana_refrescos(nombre, callback=None):
     btn_coca.bind("<Leave>", lambda e: btn_coca.config(bg="#d32f2f"))
 
     btn_fanta = tk.Button(frame_btn_refrescos, bg="#ff6f00", activebackground="#ef6c00",
-                          image=img_fanta if img_fanta else None, text="" if img_fanta else "FANTA",
+                          image=img_fanta if img_fanta else None, text="FANTA",
+                          compound="top" if img_fanta else None,
+                          font=("Roboto", 12, "bold"), fg="white",
                           command=lambda: [callback("FANTA") if callback else agregar_producto(nombre, "FANTA"), ventana_sabores.destroy()])
     if img_fanta: btn_fanta.image = img_fanta
     btn_fanta.grid(row=0, column=1, padx=8, pady=8, sticky="nsew")
@@ -446,7 +445,9 @@ def mostrar_ventana_refrescos(nombre, callback=None):
     btn_fanta.bind("<Leave>", lambda e: btn_fanta.config(bg="#ff6f00"))
 
     btn_mundet = tk.Button(frame_btn_refrescos, bg="#8d6e63", activebackground="#6d4c41",
-                          image=img_mundet if img_mundet else None, text="" if img_mundet else "MANZA",
+                          image=img_mundet if img_mundet else None, text="MANZA",
+                          compound="top" if img_mundet else None,
+                          font=("Roboto", 12, "bold"), fg="white",
                           command=lambda: [callback("MANZA") if callback else agregar_producto(nombre, "MANZA"), ventana_sabores.destroy()])
     if img_mundet: btn_mundet.image = img_mundet
     btn_mundet.grid(row=1, column=0, padx=8, pady=8, sticky="nsew")
@@ -454,7 +455,9 @@ def mostrar_ventana_refrescos(nombre, callback=None):
     btn_mundet.bind("<Leave>", lambda e: btn_mundet.config(bg="#8d6e63"))
 
     btn_sprite = tk.Button(frame_btn_refrescos, bg="#4caf50", activebackground="#388e3c",
-                           image=img_sprite if img_sprite else None, text="" if img_sprite else "SPRITE",
+                           image=img_sprite if img_sprite else None, text="SPRITE",
+                           compound="top" if img_sprite else None,
+                           font=("Roboto", 12, "bold"), fg="white",
                            command=lambda: [callback("SPRITE") if callback else agregar_producto(nombre, "SPRITE"), ventana_sabores.destroy()])
     if img_sprite: btn_sprite.image = img_sprite
     btn_sprite.grid(row=1, column=1, padx=8, pady=8, sticky="nsew")
@@ -462,7 +465,9 @@ def mostrar_ventana_refrescos(nombre, callback=None):
     btn_sprite.bind("<Leave>", lambda e: btn_sprite.config(bg="#4caf50"))
 
     btn_coca_light = tk.Button(frame_btn_refrescos, bg="#424242", activebackground="#212121",
-                           image=img_coca_light if img_coca_light else None, text="" if img_coca_light else "COCA LIGHT",
+                           image=img_coca_light if img_coca_light else None, text="COCA LIGHT",
+                           compound="top" if img_coca_light else None,
+                           font=("Roboto", 12, "bold"), fg="white",
                            command=lambda: [callback("COCA LIGHT") if callback else agregar_producto(nombre, "COCA LIGHT"), ventana_sabores.destroy()])
     if img_coca_light: btn_coca_light.image = img_coca_light
     btn_coca_light.grid(row=2, column=0, columnspan=2, padx=8, pady=8, sticky="nsew")
@@ -485,6 +490,8 @@ def mostrar_ventana_item_unificado(nombre, tipo_variante=None):
         ventana_item.geometry("820x660")
     elif tipo_variante == "carne":
         ventana_item.geometry("620x640")
+    elif tipo_variante == "refresco":
+        ventana_item.geometry("850x580")
     else:
         ventana_item.geometry("620x700")
     ventana_item.configure(bg="#e6d2a1")
@@ -515,13 +522,17 @@ def mostrar_ventana_item_unificado(nombre, tipo_variante=None):
         else:
             seccion.pack(fill="both", expand=True, padx=8, pady=6)
         frame = tk.Frame(seccion, bg="#f3e8c2")
-        frame.pack(fill="x", expand=False)
+        frame.pack(expand=True)
+        frame.grid_columnconfigure(0, weight=1)
+        frame.grid_columnconfigure(1, weight=1)
+        frame.grid_rowconfigure(0, weight=1)
+        frame.grid_rowconfigure(1, weight=1)
         botones = {}
         config = [("Carne", "#d32f2f", "#b71c1c"), ("Buche", "#c62828", "#a12020"), ("Lengua", "#b71c1c", "#901616"), ("Mixta", "#e53935", "#c02f2f")]
         if tipo_variante == "carne":
-            btn_w = 17
+            btn_w = 18
             btn_h = 5
-            btn_font = ("Roboto", 13, "bold")
+            btn_font = ("Roboto", 14, "bold")
         elif tipo_variante == "carne_taco":
             btn_w = 16
             btn_h = 4
@@ -543,7 +554,7 @@ def mostrar_ventana_item_unificado(nombre, tipo_variante=None):
                     carnes_sel.append(valor)
                     botones[valor].config(bg=sel, relief="sunken")
             btn.config(command=on_click)
-            btn.grid(row=i // 2, column=i % 2, padx=8, pady=8)
+            btn.grid(row=i // 2, column=i % 2, padx=8, pady=8, sticky="nsew")
             botones[txt] = btn
 
     def crear_selector_tacos(parent, titulo="Selecciona tipo de taco:"):
@@ -576,25 +587,46 @@ def mostrar_ventana_item_unificado(nombre, tipo_variante=None):
     def crear_selector_refresco(parent):
         tk.Label(parent, text="Selecciona refresco:", font=("Roboto", 11, "bold"), bg="#e6d2a1", fg="#3e2723").pack(anchor="w", pady=(4, 4))
         frame = tk.Frame(parent, bg="#e6d2a1")
-        frame.pack(pady=(0, 4))
+        frame.pack(pady=(0, 4), expand=True)
+        frame.grid_columnconfigure(0, weight=1)
+        frame.grid_columnconfigure(1, weight=1)
+        frame.grid_columnconfigure(2, weight=1)
+        # Cargar imágenes de refrescos
+        img_map_ref = {"COCA": "coca.png", "FANTA": "fanta.png", "MANZA": "mundet.png", "SPRITE": "sprite.png", "COCA LIGHT": "cocalight.png"}
+        img_refs = {}
+        for nombre_r, archivo_r in img_map_ref.items():
+            img_r = cargar_icono(archivo_r, size=(70, 70))
+            if img_r:
+                img_refs[nombre_r] = img_r
         opciones = [("COCA", "#d32f2f"), ("FANTA", "#ff6f00"), ("MANZA", "#8d6e63"), ("SPRITE", "#4caf50"), ("COCA LIGHT", "#424242")]
         for i, (txt, color) in enumerate(opciones):
             fg = "black" if txt == "COCA LIGHT" else "white"
-            rb = tk.Radiobutton(frame, text=txt, value=txt, variable=bebida_sel, indicatoron=0,
-                                font=("Roboto", 11, "bold"), bg=color, fg=fg, selectcolor=color,
-                                activebackground=color, activeforeground=fg, relief="flat", width=12, height=4)
-            rb.grid(row=i // 2, column=i % 2, padx=8, pady=8)
+            ref_img = img_refs.get(txt, None)
+            if ref_img:
+                rb = tk.Radiobutton(frame, text=txt, value=txt, variable=bebida_sel, indicatoron=0,
+                                    font=("Roboto", 11, "bold"), bg=color, fg=fg, selectcolor=color,
+                                    activebackground=color, activeforeground=fg, relief="flat",
+                                    image=ref_img, compound="top", padx=10, pady=6)
+                rb.image = ref_img
+            else:
+                rb = tk.Radiobutton(frame, text=txt, value=txt, variable=bebida_sel, indicatoron=0,
+                                    font=("Roboto", 11, "bold"), bg=color, fg=fg, selectcolor=color,
+                                    activebackground=color, activeforeground=fg, relief="flat", width=12, height=4)
+            rb.grid(row=i // 3, column=i % 3, padx=6, pady=6, sticky="nsew")
 
     def crear_selector_agua(parent):
         tk.Label(parent, text="Selecciona agua fresca:", font=("Roboto", 11, "bold"), bg="#e6d2a1", fg="#3e2723").pack(anchor="w", pady=(4, 4))
         frame = tk.Frame(parent, bg="#e6d2a1")
-        frame.pack(pady=(0, 4))
+        frame.pack(pady=(0, 4), expand=True)
+        frame.grid_columnconfigure(0, weight=1)
+        frame.grid_columnconfigure(1, weight=1)
+        frame.grid_rowconfigure(0, weight=1)
         opciones = [("Jamaica", "#9c0000", "white"), ("Horchata", "#f5f5f5", "black")]
         for i, (txt, color, fg) in enumerate(opciones):
             rb = tk.Radiobutton(frame, text=txt, value=txt, variable=bebida_sel, indicatoron=0,
-                                font=("Roboto", 11, "bold"), bg=color, fg=fg, selectcolor=color,
-                                activebackground=color, activeforeground=fg, relief="flat", width=12, height=4)
-            rb.grid(row=0, column=i, padx=8, pady=8)
+                                font=("Roboto", 15, "bold"), bg=color, fg=fg, selectcolor=color,
+                                activebackground=color, activeforeground=fg, relief="flat", width=16, height=5)
+            rb.grid(row=0, column=i, padx=10, pady=10, sticky="nsew")
 
     frame_variante = tk.Frame(ventana_item, bg="#e6d2a1")
     if tipo_variante == "carne":
@@ -717,12 +749,9 @@ def mostrar_ventana_bebida_paquete(nombre_paquete, seleccion_carne, seleccion_ta
     if ventana_sabores: ventana_sabores.destroy()
     ventana_sabores = tk.Toplevel(ventana)
     ventana_sabores.title(f"Seleccionar Bebida para {nombre_paquete}")
-    window_width = max(int(screen_width * 0.7), 860)
-    window_height = max(int(screen_height * 0.62), 520)
-    ventana_sabores.geometry(f"{window_width}x{window_height}")
+    ventana_sabores.geometry("950x720")
     ventana_sabores.configure(bg="#e6d2a1")
-    ventana_sabores.resizable(True, True)
-    ventana_sabores.minsize(860, 520)
+    ventana_sabores.resizable(False, False)
 
     tk.Label(
         ventana_sabores,
@@ -743,12 +772,15 @@ def mostrar_ventana_bebida_paquete(nombre_paquete, seleccion_carne, seleccion_ta
     frame_btn_bebidas.pack(pady=4, fill="both", expand=True, padx=16)
     for c in range(3):
         frame_btn_bebidas.grid_columnconfigure(c, weight=1, uniform="seccion_bebida")
+    frame_btn_bebidas.grid_rowconfigure(0, weight=1)
 
-    cantidad_entry = crear_selector_cantidad(
-        ventana_sabores,
-        bg="#e6d2a1",
-        valor_inicial=cantidad_state.get("cantidad", 1) if cantidad_state else 1
-    )
+    # --- Cargar imágenes de refrescos para paquete ---
+    img_refs_paq = {}
+    img_map = {"COCA": "coca.png", "FANTA": "fanta.png", "MANZA": "mundet.png", "SPRITE": "sprite.png", "COCA LIGHT": "cocalight.png"}
+    for nombre_ref, archivo_img in img_map.items():
+        img = cargar_icono(archivo_img, size=(50, 50))
+        if img:
+            img_refs_paq[nombre_ref] = img
 
     secciones_bebida = [
         ("Refrescos", "#0288d1", [
@@ -810,26 +842,37 @@ def mostrar_ventana_bebida_paquete(nombre_paquete, seleccion_carne, seleccion_ta
         ).pack(anchor="w", padx=8, pady=4)
 
         grid_seccion = tk.Frame(frame_seccion, bg="#f7efd8")
-        grid_seccion.pack(fill="both", expand=True, padx=8, pady=8)
+        grid_seccion.pack(fill="both", expand=True, padx=6, pady=6)
         grid_seccion.grid_columnconfigure(0, weight=1)
 
         for i, (texto, color, hover, categoria, extra) in enumerate(opciones):
             fg_color = "black" if texto == "HORCHATA" else "white"
+            grid_seccion.grid_rowconfigure(i, weight=1)
+            # Check if this button has an image
+            btn_img = img_refs_paq.get(texto, None)
             btn = tk.Button(
                 grid_seccion,
                 text=texto,
-                font=("Roboto", 10, "bold"),
+                font=("Roboto", 11, "bold"),
                 bg=color,
                 fg=fg_color,
                 relief="flat",
                 activebackground=hover,
-                width=13,
-                height=4,
+                image=btn_img if btn_img else None,
+                compound="left" if btn_img else None,
                 command=lambda t=texto, cat=categoria, e=extra: seleccionar_bebida_paquete(t, cat, e)
             )
-            btn.grid(row=i, column=0, padx=5, pady=5, sticky="nsew")
+            if btn_img:
+                btn.image = btn_img
+            btn.grid(row=i, column=0, padx=4, pady=3, sticky="nsew")
             btn.bind("<Enter>", lambda e, b=btn, c=hover: b.config(bg=c))
             btn.bind("<Leave>", lambda e, b=btn, c=color: b.config(bg=c))
+
+    cantidad_entry = crear_selector_cantidad(
+        ventana_sabores,
+        bg="#e6d2a1",
+        valor_inicial=cantidad_state.get("cantidad", 1) if cantidad_state else 1
+    )
 
     tk.Label(
         ventana_sabores,
